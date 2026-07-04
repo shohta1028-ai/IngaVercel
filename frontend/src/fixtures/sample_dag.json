@@ -1,0 +1,37 @@
+{
+  "id": "dag_sample_001",
+  "name": "製造業_サンプルDAG",
+  "industry": "製造業",
+  "company": "サンプル株式会社",
+  "goal": "物流効率化による営業利益改善",
+  "nodes": [
+    { "id": "revenue", "label": "売上高", "category": "PL", "statement": "売上高", "unit": "円", "source": "template" },
+    { "id": "cogs", "label": "売上原価", "category": "PL", "statement": "売上原価", "unit": "円", "source": "template" },
+    { "id": "logistics_cost", "label": "配送費", "category": "PL", "statement": "販管費", "unit": "円", "source": "ir_data" },
+    { "id": "operating_income", "label": "営業利益", "category": "PL", "statement": "営業利益", "unit": "円", "source": "template" },
+    { "id": "inventory", "label": "棚卸資産", "category": "BS", "statement": "流動資産", "unit": "円", "source": "template" },
+    { "id": "operating_cf", "label": "営業キャッシュフロー", "category": "CS", "statement": "営業活動によるCF", "unit": "円", "source": "template" },
+    { "id": "plant_utilization_rate", "label": "工場稼働率", "category": "KPI_nonfinancial", "unit": "%", "source": "template" },
+    { "id": "defect_rate", "label": "不良率", "category": "KPI_nonfinancial", "unit": "%", "source": "template" },
+    { "id": "truck_utilization_rate", "label": "トラック稼働率", "category": "KPI_nonfinancial", "unit": "%", "source": "user_added" }
+  ],
+  "edges": [
+    { "id": "e1", "source_node_id": "revenue", "target_node_id": "operating_income", "sign": "positive", "status": "user_confirmed" },
+    { "id": "e2", "source_node_id": "cogs", "target_node_id": "operating_income", "sign": "negative", "status": "user_confirmed" },
+    { "id": "e3", "source_node_id": "plant_utilization_rate", "target_node_id": "cogs", "sign": "negative", "status": "user_confirmed", "rationale": "稼働率上昇は固定費配賦効率を改善し単位原価を下げる" },
+    { "id": "e4", "source_node_id": "defect_rate", "target_node_id": "cogs", "sign": "positive", "status": "ai_proposed", "rationale": "不良率上昇は手直し・廃棄コストを増加させる（AI仮説・要確認）" },
+    { "id": "e5", "source_node_id": "inventory", "target_node_id": "operating_cf", "sign": "negative", "status": "ai_proposed", "rationale": "棚卸資産の増加は運転資本を圧迫し営業CFを悪化させる（AI仮説・要確認）" },
+    { "id": "e6", "source_node_id": "operating_income", "target_node_id": "operating_cf", "sign": "positive", "status": "user_confirmed" },
+    { "id": "e7", "source_node_id": "logistics_cost", "target_node_id": "operating_income", "sign": "negative", "status": "user_confirmed", "rationale": "IRより「物流効率化」が今年度の重点KPIとして掲げられているため因果パスを強化" },
+    {
+      "id": "e8",
+      "source_node_id": "truck_utilization_rate",
+      "target_node_id": "logistics_cost",
+      "sign": "negative",
+      "status": "user_modified",
+      "rationale": "YES。ただしトラック稼働率の影響が出るのは3カ月後なのでタイムラグを設定",
+      "lag": { "value": 3, "unit": "month" },
+      "round_added": 2
+    }
+  ]
+}
