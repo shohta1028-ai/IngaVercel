@@ -17,6 +17,9 @@ build/
 .env
 .env.local
 
+# Runtime state
+backend/data/
+
 # IDE
 .vscode/
 .idea/

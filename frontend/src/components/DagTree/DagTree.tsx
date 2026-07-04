@@ -9,7 +9,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import type { DagEdge, FinancialCausalDAG } from "../../types/dag";
+import type { FinancialCausalDAG } from "../../types/dag";
+import { createEdge, updateGoal } from "../../api/client";
 import { layoutDagNodes, unconnectedNodeIds } from "../../lib/layout";
 import { edgeColorVar, edgeDashArray } from "../../lib/colors";
 import { DagNodeCard, type DagFlowNodeData } from "./DagNodeCard";
@@ -90,23 +91,21 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
 
   function handleConnect(connection: Connection) {
     if (!connection.source || !connection.target) return;
+    createEdge(connection.source, connection.target)
+      .then(setDag)
+      .catch((e) => console.error("エッジの追加に失敗しました", e));
+  }
 
-    const newEdge: DagEdge = {
-      id: `e_user_${Date.now()}`,
-      source_node_id: connection.source,
-      target_node_id: connection.target,
-      sign: "ambiguous",
-      status: "user_confirmed",
-      rationale: "ユーザーがドラッグ操作で紐付け（影響の方向は要確認）",
-    };
-    setDag((prev) => ({ ...prev, edges: [...prev.edges, newEdge] }));
+  function handleGoalChange(goal: string) {
+    setDag((prev) => ({ ...prev, goal })); // 入力中の見た目を即時反映
+    updateGoal(goal).catch((e) => console.error("ゴールの更新に失敗しました", e));
   }
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
       <GoalBar
         goal={dag.goal ?? ""}
-        onChange={(goal) => setDag((prev) => ({ ...prev, goal }))}
+        onChange={handleGoalChange}
         onToggleChat={() => setIsChatOpen((v) => !v)}
         isChatOpen={isChatOpen}
       />
