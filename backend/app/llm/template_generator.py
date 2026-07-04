@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 
 from anthropic import Anthropic
 
+from app.common.json_utils import extract_json_text
 from app.models.dag import (
     Edge,
     EdgeSign,
@@ -70,7 +71,7 @@ def build_user_prompt(industry: str) -> str:
 
 
 def _parse_llm_nodes_and_edges(raw_json: str) -> tuple[list[Node], list[Edge]]:
-    data = json.loads(raw_json)
+    data = json.loads(extract_json_text(raw_json))
 
     nodes = [
         Node(
@@ -114,7 +115,7 @@ def generate_industry_template(
 
     response = client.messages.create(
         model=model,
-        max_tokens=8000,
+        max_tokens=16000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": build_user_prompt(industry)}],
     )

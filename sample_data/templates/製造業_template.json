@@ -1,0 +1,814 @@
+{
+  "id": "dag_a4d92eab",
+  "name": "製造業_標準テンプレート",
+  "industry": "製造業",
+  "company": null,
+  "goal": null,
+  "created_at": "2026-07-04T05:50:49.532761Z",
+  "updated_at": "2026-07-04T05:50:49.532761Z",
+  "tuning_state": {
+    "status": "not_started",
+    "completed_rounds": 0,
+    "rounds": []
+  },
+  "nodes": [
+    {
+      "id": "equipment_utilization_rate",
+      "label": "設備稼働率",
+      "category": "KPI_nonfinancial",
+      "statement": null,
+      "unit": "%",
+      "description": "生産設備が稼働可能時間のうちどれだけ実際に稼働したかを示す指標。固定費の配賦効率や生産量に直結する製造業の中核KPI。",
+      "source": "template"
+    },
+    {
+      "id": "yield_rate",
+      "label": "歩留まり率",
+      "category": "KPI_nonfinancial",
+      "statement": null,
+      "unit": "%",
+      "description": "投入原材料・仕掛品に対して良品として産出された割合。原価効率を左右する。",
+      "source": "template"
+    },
+    {
+      "id": "defect_rate",
+      "label": "不良品率",
+      "category": "KPI_nonfinancial",
+      "statement": null,
+      "unit": "%",
+      "description": "生産数量に対する不良品の発生割合。手直し・廃棄コストと出荷可能数量に影響する。",
+      "source": "template"
+    },
+    {
+      "id": "lead_time",
+      "label": "平均リードタイム",
+      "category": "KPI_nonfinancial",
+      "statement": null,
+      "unit": "日",
+      "description": "受注から出荷までに要する平均日数。在庫水準や納期対応力に影響する。",
+      "source": "template"
+    },
+    {
+      "id": "labor_productivity",
+      "label": "労働生産性",
+      "category": "KPI_nonfinancial",
+      "statement": null,
+      "unit": "円/人",
+      "description": "従業員一人当たりの生産金額。人件費・間接費の効率性を表す。",
+      "source": "template"
+    },
+    {
+      "id": "inventory_turnover",
+      "label": "在庫回転率",
+      "category": "KPI_financial",
+      "statement": null,
+      "unit": "回/年",
+      "description": "売上原価を棚卸資産で除した指標。在庫効率とキャッシュ効率を示す。",
+      "source": "template"
+    },
+    {
+      "id": "gross_profit_margin",
+      "label": "売上高総利益率",
+      "category": "KPI_financial",
+      "statement": null,
+      "unit": "%",
+      "description": "売上総利益を売上高で除した収益性指標。",
+      "source": "template"
+    },
+    {
+      "id": "operating_profit_margin",
+      "label": "売上高営業利益率",
+      "category": "KPI_financial",
+      "statement": null,
+      "unit": "%",
+      "description": "営業利益を売上高で除した本業の収益性指標。",
+      "source": "template"
+    },
+    {
+      "id": "roa",
+      "label": "ROA（総資産利益率）",
+      "category": "KPI_financial",
+      "statement": null,
+      "unit": "%",
+      "description": "当期純利益を総資産で除した資産効率性指標。",
+      "source": "template"
+    },
+    {
+      "id": "equity_ratio",
+      "label": "自己資本比率",
+      "category": "KPI_financial",
+      "statement": null,
+      "unit": "%",
+      "description": "純資産を総資産で除した財務健全性指標。",
+      "source": "template"
+    },
+    {
+      "id": "revenue",
+      "label": "売上高",
+      "category": "PL",
+      "statement": "売上高",
+      "unit": "円",
+      "description": "製品販売による収益総額。",
+      "source": "template"
+    },
+    {
+      "id": "cogs",
+      "label": "売上原価",
+      "category": "PL",
+      "statement": "売上原価",
+      "unit": "円",
+      "description": "製造にかかる直接材料費・労務費・製造間接費の合計。",
+      "source": "template"
+    },
+    {
+      "id": "gross_profit",
+      "label": "売上総利益",
+      "category": "PL",
+      "statement": "売上総利益",
+      "unit": "円",
+      "description": "売上高から売上原価を控除した利益。",
+      "source": "template"
+    },
+    {
+      "id": "sga",
+      "label": "販売費及び一般管理費",
+      "category": "PL",
+      "statement": "販管費",
+      "unit": "円",
+      "description": "営業・管理部門にかかる間接費用。",
+      "source": "template"
+    },
+    {
+      "id": "operating_income",
+      "label": "営業利益",
+      "category": "PL",
+      "statement": "営業利益",
+      "unit": "円",
+      "description": "売上総利益から販管費を控除した本業の利益。",
+      "source": "template"
+    },
+    {
+      "id": "depreciation",
+      "label": "減価償却費",
+      "category": "PL",
+      "statement": "製造原価・販管費",
+      "unit": "円",
+      "description": "有形固定資産の取得原価を耐用年数にわたり費用配分したもの。",
+      "source": "template"
+    },
+    {
+      "id": "interest_expense",
+      "label": "支払利息",
+      "category": "PL",
+      "statement": "営業外費用",
+      "unit": "円",
+      "description": "有利子負債に対する利息負担。",
+      "source": "template"
+    },
+    {
+      "id": "net_income",
+      "label": "当期純利益",
+      "category": "PL",
+      "statement": "当期純利益",
+      "unit": "円",
+      "description": "営業利益から金融損益・税金等を控除した最終利益。",
+      "source": "template"
+    },
+    {
+      "id": "inventory",
+      "label": "棚卸資産",
+      "category": "BS",
+      "statement": "流動資産",
+      "unit": "円",
+      "description": "原材料・仕掛品・製品の在庫額。",
+      "source": "template"
+    },
+    {
+      "id": "ppe",
+      "label": "有形固定資産",
+      "category": "BS",
+      "statement": "固定資産",
+      "unit": "円",
+      "description": "工場・機械設備等の生産設備資産。",
+      "source": "template"
+    },
+    {
+      "id": "accounts_receivable",
+      "label": "売上債権",
+      "category": "BS",
+      "statement": "流動資産",
+      "unit": "円",
+      "description": "売掛金・受取手形等の未回収販売代金。",
+      "source": "template"
+    },
+    {
+      "id": "accounts_payable",
+      "label": "買入債務",
+      "category": "BS",
+      "statement": "流動負債",
+      "unit": "円",
+      "description": "仕入・製造にかかる未払代金。",
+      "source": "template"
+    },
+    {
+      "id": "cash",
+      "label": "現金及び現金同等物",
+      "category": "BS",
+      "statement": "流動資産",
+      "unit": "円",
+      "description": "手元流動性資金。",
+      "source": "template"
+    },
+    {
+      "id": "interest_bearing_debt",
+      "label": "有利子負債",
+      "category": "BS",
+      "statement": "固定負債・流動負債",
+      "unit": "円",
+      "description": "借入金・社債等の利息を伴う負債。",
+      "source": "template"
+    },
+    {
+      "id": "equity",
+      "label": "純資産",
+      "category": "BS",
+      "statement": "純資産",
+      "unit": "円",
+      "description": "株主資本・利益剰余金等の合計。",
+      "source": "template"
+    },
+    {
+      "id": "total_assets",
+      "label": "総資産",
+      "category": "BS",
+      "statement": "資産合計",
+      "unit": "円",
+      "description": "貸借対照表上の資産合計額。",
+      "source": "template"
+    },
+    {
+      "id": "operating_cf",
+      "label": "営業活動によるキャッシュフロー",
+      "category": "CS",
+      "statement": "営業活動CF",
+      "unit": "円",
+      "description": "本業から生み出される現金収支。",
+      "source": "template"
+    },
+    {
+      "id": "investing_cf",
+      "label": "投資活動によるキャッシュフロー",
+      "category": "CS",
+      "statement": "投資活動CF",
+      "unit": "円",
+      "description": "設備投資等の投資活動による現金収支。",
+      "source": "template"
+    },
+    {
+      "id": "capex",
+      "label": "設備投資額",
+      "category": "CS",
+      "statement": "投資活動CF",
+      "unit": "円",
+      "description": "生産設備・工場等への投資支出。",
+      "source": "template"
+    },
+    {
+      "id": "financing_cf",
+      "label": "財務活動によるキャッシュフロー",
+      "category": "CS",
+      "statement": "財務活動CF",
+      "unit": "円",
+      "description": "借入・返済・配当等による現金収支。",
+      "source": "template"
+    },
+    {
+      "id": "free_cash_flow",
+      "label": "フリーキャッシュフロー",
+      "category": "CS",
+      "statement": null,
+      "unit": "円",
+      "description": "営業CFから投資CF（設備投資）を控除した自由に使える資金。",
+      "source": "template"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_a16ae409",
+      "source_node_id": "equipment_utilization_rate",
+      "target_node_id": "cogs",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "稼働率が高いほど固定製造費が多くの生産数量に配賦され、単位当たり原価が低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_6ef76584",
+      "source_node_id": "equipment_utilization_rate",
+      "target_node_id": "revenue",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "稼働率が高いほど生産量が増え、販売可能な数量が増加し売上に寄与する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_997af515",
+      "source_node_id": "yield_rate",
+      "target_node_id": "cogs",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "歩留まりが高いほど廃棄・手直しが減り、原材料・加工費のロスが減少する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_69c4e1cf",
+      "source_node_id": "defect_rate",
+      "target_node_id": "cogs",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "不良率が高いほど手直し・廃棄コストが増加し原価を押し上げる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_1b6ae5aa",
+      "source_node_id": "defect_rate",
+      "target_node_id": "revenue",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "不良品の増加は出荷可能数量の減少や返品増加を通じて売上を減少させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_c1602d03",
+      "source_node_id": "labor_productivity",
+      "target_node_id": "cogs",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "労働生産性が高いほど単位生産あたりの労務費が低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_7a78e9e0",
+      "source_node_id": "labor_productivity",
+      "target_node_id": "sga",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "生産性向上は間接部門の効率化を促し販管費を抑制する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_2c96d722",
+      "source_node_id": "lead_time",
+      "target_node_id": "inventory",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "リードタイムが長いほど安全在庫や仕掛品在庫を多く保有する必要がある。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_8290b356",
+      "source_node_id": "revenue",
+      "target_node_id": "accounts_receivable",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上増加は掛売りの増加を通じて売上債権残高を増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_c553c023",
+      "source_node_id": "cogs",
+      "target_node_id": "accounts_payable",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "原価・仕入が増えるほど仕入先への未払残高（買入債務）が増加する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_0a1682dc",
+      "source_node_id": "capex",
+      "target_node_id": "ppe",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "設備投資支出は有形固定資産の取得・増加として計上される。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_92a4dd99",
+      "source_node_id": "ppe",
+      "target_node_id": "depreciation",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "有形固定資産残高が大きいほど毎期の減価償却費も増加する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_aa669ff6",
+      "source_node_id": "revenue",
+      "target_node_id": "gross_profit",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上高の増加はそのまま売上総利益の増加要因となる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_5a85a2b3",
+      "source_node_id": "cogs",
+      "target_node_id": "gross_profit",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上原価の増加は売上総利益を圧迫する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_ecda9f2b",
+      "source_node_id": "gross_profit",
+      "target_node_id": "operating_income",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上総利益は営業利益算出の起点となる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_83577a8b",
+      "source_node_id": "sga",
+      "target_node_id": "operating_income",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "販管費の増加は営業利益を圧迫する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_dd53af4b",
+      "source_node_id": "operating_income",
+      "target_node_id": "net_income",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "営業利益は当期純利益の主要な構成要素。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_a7041573",
+      "source_node_id": "interest_expense",
+      "target_node_id": "net_income",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "支払利息は営業外費用として純利益を減少させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_e626f7f4",
+      "source_node_id": "interest_bearing_debt",
+      "target_node_id": "interest_expense",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "有利子負債残高が大きいほど支払利息負担が増加する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_4d900ea0",
+      "source_node_id": "cogs",
+      "target_node_id": "inventory_turnover",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "在庫回転率＝売上原価／棚卸資産であり、原価が大きいほど回転率は上昇する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_e4021aad",
+      "source_node_id": "inventory",
+      "target_node_id": "inventory_turnover",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "棚卸資産が大きいほど在庫回転率は低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_766ec4ee",
+      "source_node_id": "gross_profit",
+      "target_node_id": "gross_profit_margin",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上総利益率＝売上総利益／売上高であり、分子の増加は比率を押し上げる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_a1d8670b",
+      "source_node_id": "revenue",
+      "target_node_id": "gross_profit_margin",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "分母である売上高が利益以上に増加すると総利益率は低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_58dabcae",
+      "source_node_id": "operating_income",
+      "target_node_id": "operating_profit_margin",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "営業利益率＝営業利益／売上高であり、分子の増加は比率を押し上げる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_992db275",
+      "source_node_id": "revenue",
+      "target_node_id": "operating_profit_margin",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "分母の売上高が利益以上に増加すると営業利益率は低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_5be2e2c1",
+      "source_node_id": "ppe",
+      "target_node_id": "total_assets",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "有形固定資産は総資産の主要構成要素。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_c0964c73",
+      "source_node_id": "inventory",
+      "target_node_id": "total_assets",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "棚卸資産は流動資産として総資産を構成する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_e8803a62",
+      "source_node_id": "accounts_receivable",
+      "target_node_id": "total_assets",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上債権は流動資産として総資産を構成する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_58333a5d",
+      "source_node_id": "cash",
+      "target_node_id": "total_assets",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "現金及び現金同等物は流動資産として総資産を構成する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_07c8cf8b",
+      "source_node_id": "net_income",
+      "target_node_id": "roa",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "ROA＝当期純利益／総資産であり、純利益の増加はROAを押し上げる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_baf19410",
+      "source_node_id": "total_assets",
+      "target_node_id": "roa",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "総資産が純利益以上に増加するとROAは低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_aba9d9f4",
+      "source_node_id": "net_income",
+      "target_node_id": "equity",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "当期純利益は利益剰余金として純資産に加算される。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_14428981",
+      "source_node_id": "equity",
+      "target_node_id": "equity_ratio",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "自己資本比率＝純資産／総資産であり、純資産増加は比率を押し上げる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_8d7f4c75",
+      "source_node_id": "total_assets",
+      "target_node_id": "equity_ratio",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "総資産が純資産以上に増加すると自己資本比率は低下する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_d070c0ed",
+      "source_node_id": "interest_bearing_debt",
+      "target_node_id": "equity_ratio",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "有利子負債の増加は総資産を膨らませ自己資本比率を押し下げる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_ddecc99c",
+      "source_node_id": "net_income",
+      "target_node_id": "operating_cf",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "当期純利益は営業キャッシュフローの起点となる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_456af84b",
+      "source_node_id": "depreciation",
+      "target_node_id": "operating_cf",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "減価償却費は非資金費用のため純利益に加算戻しされ営業CFを増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_09a46ae8",
+      "source_node_id": "inventory",
+      "target_node_id": "operating_cf",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "棚卸資産の増加は運転資本の増加としてキャッシュを圧迫する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_584e6894",
+      "source_node_id": "accounts_receivable",
+      "target_node_id": "operating_cf",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "売上債権の増加は未回収資金の増加としてキャッシュを圧迫する。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_0c64243d",
+      "source_node_id": "accounts_payable",
+      "target_node_id": "operating_cf",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "買入債務の増加は支払繰延によりキャッシュを増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_6ce44830",
+      "source_node_id": "capex",
+      "target_node_id": "investing_cf",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "設備投資支出は投資活動によるキャッシュフローを減少させる（資金流出）。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_198f7ecd",
+      "source_node_id": "operating_cf",
+      "target_node_id": "free_cash_flow",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "営業CFはフリーキャッシュフローの主要な源泉。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_53cde47c",
+      "source_node_id": "capex",
+      "target_node_id": "free_cash_flow",
+      "sign": "negative",
+      "strength": null,
+      "lag": null,
+      "rationale": "設備投資額はフリーキャッシュフロー算出時に営業CFから控除される。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_50353a9b",
+      "source_node_id": "interest_bearing_debt",
+      "target_node_id": "financing_cf",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "有利子負債の調達（借入）は財務活動によるキャッシュフローを増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_14917496",
+      "source_node_id": "operating_cf",
+      "target_node_id": "cash",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "営業活動によるキャッシュフローは現金残高を増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_6e92e85f",
+      "source_node_id": "investing_cf",
+      "target_node_id": "cash",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "投資活動によるキャッシュフローの増加（流出減少）は現金残高を増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    },
+    {
+      "id": "e_d132f2a7",
+      "source_node_id": "financing_cf",
+      "target_node_id": "cash",
+      "sign": "positive",
+      "strength": null,
+      "lag": null,
+      "rationale": "財務活動によるキャッシュフローの増加は現金残高を増加させる。",
+      "status": "ai_proposed",
+      "round_added": null
+    }
+  ]
+}

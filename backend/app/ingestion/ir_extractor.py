@@ -7,6 +7,7 @@ import os
 
 from anthropic import Anthropic
 
+from app.common.json_utils import extract_json_text
 from app.ingestion.models import IRDataPoint, IRDataPointKind, IRDataSource
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
@@ -46,7 +47,7 @@ def build_user_prompt(document_text: str) -> str:
 
 
 def _parse_llm_data_points(raw_json: str, document_name: str) -> list[IRDataPoint]:
-    data = json.loads(raw_json)
+    data = json.loads(extract_json_text(raw_json))
     return [
         IRDataPoint(
             label=dp["label"],

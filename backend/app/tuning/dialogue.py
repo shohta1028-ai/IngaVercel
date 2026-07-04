@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 
 from anthropic import Anthropic
 
+from app.common.json_utils import extract_json_text
 from app.merge.node_ops import unconnected_node_ids
 from app.models.dag import (
     Edge,
@@ -114,7 +115,7 @@ def generate_next_proposal(
         raw = _call_llm(
             client, model, CONFIRM_EDGE_SYSTEM_PROMPT, user_content, max_tokens=500
         )
-        message = json.loads(raw)["message"]
+        message = json.loads(extract_json_text(raw))["message"]
         return TuningProposal(
             round_number=round_number,
             kind=ProposalKind.CONFIRM_EDGE,
@@ -137,7 +138,7 @@ def generate_next_proposal(
         raw = _call_llm(
             client, model, CONNECT_NODE_SYSTEM_PROMPT, user_content, max_tokens=500
         )
-        data = json.loads(raw)
+        data = json.loads(extract_json_text(raw))
         candidate_edge = Edge(
             id=f"e_proposal_{uuid.uuid4().hex[:8]}",
             source_node_id=candidate_node.id,
@@ -163,7 +164,7 @@ def _interpret_user_response(
     raw = _call_llm(
         client, model, INTERPRET_RESPONSE_SYSTEM_PROMPT, user_content, max_tokens=300
     )
-    data = json.loads(raw)
+    data = json.loads(extract_json_text(raw))
     return ParsedUserResponse(
         decision=UserDecision(data["decision"]),
         sign_override=data.get("sign_override"),
