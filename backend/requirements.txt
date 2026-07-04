@@ -3,3 +3,9 @@ pydantic>=2.7.0
 pytest>=8.0.0
 pypdf>=4.3.0
 openpyxl>=3.1.0
+dowhy==0.8
+# dowhy==0.8はnetworkxのd_separated APIに依存するため3.3以降(is_d_separatorに改名)ではなく3.2.1に固定
+networkx==3.2.1
+pandas>=2.0.0
+numpy>=1.26.0
+statsmodels>=0.14.0
