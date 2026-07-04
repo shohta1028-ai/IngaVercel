@@ -34,6 +34,12 @@ from app.ingestion.file_loader import extract_text_from_file
 from app.ingestion.ir_extractor import extract_ir_data_points
 from app.ingestion.manual_loader import load_manual_data
 from app.ingestion.models import IRDataPoint
+from app.api.template_library import (
+    TemplateLibraryEntry,
+    TemplateLibraryListItem,
+    get_or_generate_entry,
+    list_catalog,
+)
 from app.llm.template_generator import generate_industry_template
 from app.merge.goal import set_goal
 from app.merge.ir_merge import merge_ir_data_points
@@ -158,6 +164,38 @@ def post_generate_template(body: TemplateGenerateRequest) -> FinancialCausalDAG:
         raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
     save_dag(dag)
     return dag
+
+
+@app.get("/api/template-library", response_model=list[TemplateLibraryListItem])
+def get_template_library() -> list[TemplateLibraryListItem]:
+    """業界カタログの一覧。生成済み(cached=true)のものはsummaryを含む。"""
+    return list_catalog()
+
+
+@app.get("/api/template-library/{industry_id}", response_model=TemplateLibraryEntry)
+def get_template_library_entry(industry_id: str) -> TemplateLibraryEntry:
+    """カタログの1業界の詳細(DAG＋サマリー)。未生成なら初回アクセス時に
+    LLMで生成しキャッシュする。
+    """
+    try:
+        return get_or_generate_entry(industry_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+
+
+@app.post("/api/template-library/{industry_id}/apply", response_model=FinancialCausalDAG)
+def post_apply_template_library_entry(industry_id: str) -> FinancialCausalDAG:
+    """カタログのテンプレートを現在の作業DAGとして採用する。"""
+    try:
+        entry = get_or_generate_entry(industry_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+    save_dag(entry.dag)
+    return entry.dag
 
 
 @app.post("/api/ir/extract", response_model=list[IRDataPoint])

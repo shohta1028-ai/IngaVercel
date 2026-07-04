@@ -2,6 +2,7 @@ import type { FinancialCausalDAG, NodeSource } from "../types/dag";
 import type { TuningProposal } from "./tuningTypes";
 import type { IRDataPoint } from "./irTypes";
 import type { CausalEffectResult, WhatIfProjection } from "./causalTypes";
+import type { TemplateLibraryEntry, TemplateLibraryListItem } from "./templateLibraryTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -116,5 +117,19 @@ export function fetchWhatIf(
   return request<WhatIfProjection[]>("/api/causal/whatif", {
     method: "POST",
     body: JSON.stringify({ source_node_id: sourceNodeId, delta_percent: deltaPercent }),
+  });
+}
+
+export function fetchTemplateLibrary(): Promise<TemplateLibraryListItem[]> {
+  return request<TemplateLibraryListItem[]>("/api/template-library");
+}
+
+export function fetchTemplateLibraryEntry(industryId: string): Promise<TemplateLibraryEntry> {
+  return request<TemplateLibraryEntry>(`/api/template-library/${industryId}`);
+}
+
+export function applyTemplateLibraryEntry(industryId: string): Promise<FinancialCausalDAG> {
+  return request<FinancialCausalDAG>(`/api/template-library/${industryId}/apply`, {
+    method: "POST",
   });
 }

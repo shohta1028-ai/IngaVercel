@@ -56,7 +56,7 @@ export function Sidebar({
   isChatOpen,
   isTuningLocked,
   onToggleChat,
-  onOpenTemplateGenerator,
+  onOpenTemplateLibrary,
   onOpenIrData,
   onOpenEffectEstimation,
   onOpenWhatIf,
@@ -66,7 +66,7 @@ export function Sidebar({
   isChatOpen: boolean;
   isTuningLocked: boolean;
   onToggleChat: () => void;
-  onOpenTemplateGenerator: () => void;
+  onOpenTemplateLibrary: () => void;
   onOpenIrData: () => void;
   onOpenEffectEstimation: () => void;
   onOpenWhatIf: () => void;
@@ -108,10 +108,10 @@ export function Sidebar({
         探索
       </div>
       <SidebarButton
-        label="データから因果関係を探索する（業界テンプレート生成）"
+        label="業界テンプレートライブラリ"
         icon={<TemplateIcon />}
         accent={discoveryAccent}
-        onClick={onOpenTemplateGenerator}
+        onClick={onOpenTemplateLibrary}
       />
       <SidebarButton
         label="データから因果関係を探索する（IRデータ取込み）"

@@ -20,7 +20,7 @@ import { Legend } from "./Legend";
 import { DetailPanel } from "./DetailPanel";
 import { TopStrip } from "./TopStrip";
 import { ChatTuning } from "../ChatTuning/ChatTuning";
-import { TemplateGeneratorPanel } from "../TemplateGenerator/TemplateGeneratorPanel";
+import { TemplateLibraryPanel } from "../TemplateLibrary/TemplateLibraryPanel";
 import { IrDataPanel } from "../IrData/IrDataPanel";
 import { EffectEstimationPanel } from "../CausalEffect/EffectEstimationPanel";
 import { WhatIfSimulator } from "../WhatIf/WhatIfSimulator";
@@ -130,6 +130,17 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
     updateGoal(goal).catch((e) => console.error("ゴールの更新に失敗しました", e));
   }
 
+  function handleTemplateApplied(newDag: FinancialCausalDAG) {
+    setDag(newDag);
+    setIsTemplatePanelOpen(false);
+    setIsChatOpen(true); // そのまま対話チューニングへ
+  }
+
+  function handleRequestUploadFromLibrary() {
+    setIsTemplatePanelOpen(false);
+    setIsIrPanelOpen(true);
+  }
+
   async function handleToggleMode() {
     if (mode === "discovery") {
       setMode("inference");
@@ -156,7 +167,7 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
         isChatOpen={isChatOpen}
         isTuningLocked={isTuningLocked}
         onToggleChat={() => setIsChatOpen((v) => !v)}
-        onOpenTemplateGenerator={() => setIsTemplatePanelOpen(true)}
+        onOpenTemplateLibrary={() => setIsTemplatePanelOpen(true)}
         onOpenIrData={() => setIsIrPanelOpen(true)}
         onOpenEffectEstimation={() => setIsEffectPanelOpen(true)}
         onOpenWhatIf={() => setIsWhatIfPanelOpen(true)}
@@ -221,8 +232,9 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
         )}
       </div>
       {isTemplatePanelOpen && (
-        <TemplateGeneratorPanel
-          onGenerated={setDag}
+        <TemplateLibraryPanel
+          onApplied={handleTemplateApplied}
+          onRequestUpload={handleRequestUploadFromLibrary}
           onClose={() => setIsTemplatePanelOpen(false)}
         />
       )}

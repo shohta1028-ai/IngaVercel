@@ -13,6 +13,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(store_module, "DATA_DIR", tmp_path)
     monkeypatch.setattr(store_module, "CURRENT_DAG_PATH", tmp_path / "current_dag.json")
 
+    import app.api.template_library as template_library_module
+
+    monkeypatch.setattr(template_library_module, "LIBRARY_DIR", tmp_path / "template_library")
+
     from app.api.main import app
 
     return TestClient(app)
@@ -210,3 +214,66 @@ def test_causal_whatif_unknown_node_returns_400(client):
         json={"source_node_id": "nonexistent", "delta_percent": 10},
     )
     assert response.status_code == 400
+
+
+def test_template_library_list_returns_catalog(client):
+    response = client.get("/api/template-library")
+    assert response.status_code == 200
+    body = response.json()
+    assert {"manufacturing", "retail", "saas", "infrastructure", "services"} == {
+        item["industry_id"] for item in body
+    }
+    assert all(not item["cached"] for item in body)
+
+
+def test_template_library_entry_generates_and_caches(client, monkeypatch):
+    fake_dag = FinancialCausalDAG(
+        id="dag_fake",
+        name="fake",
+        industry="製造業",
+        nodes=[Node(id="revenue", label="売上高", category=NodeCategory.PL, source=NodeSource.TEMPLATE)],
+        edges=[],
+    )
+    monkeypatch.setattr(
+        "app.api.template_library.generate_industry_template_with_summary",
+        lambda industry, client=None: (fake_dag, "製造業のサマリー"),
+    )
+
+    response = client.get("/api/template-library/manufacturing")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["industry_label"] == "製造業"
+    assert body["summary"] == "製造業のサマリー"
+
+    # 2回目はキャッシュから返るのでlist側もcached=trueになる
+    list_response = client.get("/api/template-library")
+    manufacturing_item = next(
+        i for i in list_response.json() if i["industry_id"] == "manufacturing"
+    )
+    assert manufacturing_item["cached"] is True
+
+
+def test_template_library_entry_unknown_industry_returns_404(client):
+    response = client.get("/api/template-library/nonexistent")
+    assert response.status_code == 404
+
+
+def test_template_library_apply_replaces_current_dag(client, monkeypatch):
+    fake_dag = FinancialCausalDAG(
+        id="dag_fake_retail",
+        name="fake",
+        industry="小売業",
+        nodes=[Node(id="revenue", label="売上高", category=NodeCategory.PL, source=NodeSource.TEMPLATE)],
+        edges=[],
+    )
+    monkeypatch.setattr(
+        "app.api.template_library.generate_industry_template_with_summary",
+        lambda industry, client=None: (fake_dag, "小売業のサマリー"),
+    )
+
+    response = client.post("/api/template-library/retail/apply")
+    assert response.status_code == 200
+    assert response.json()["id"] == "dag_fake_retail"
+
+    current = client.get("/api/dag").json()
+    assert current["id"] == "dag_fake_retail"
