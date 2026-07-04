@@ -38,6 +38,10 @@ def estimate_causal_effect(
         raise ValueError(f"存在しないノードIDです: {treatment_node_id}")
     if outcome_node_id not in graph.nodes:
         raise ValueError(f"存在しないノードIDです: {outcome_node_id}")
+    if treatment_node_id not in data.columns:
+        raise ValueError(f"データに数値列がないノードです: {treatment_node_id}")
+    if outcome_node_id not in data.columns:
+        raise ValueError(f"データに数値列がないノードです: {outcome_node_id}")
 
     model = CausalModel(
         data=data,

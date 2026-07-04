@@ -8,22 +8,34 @@
 
 from __future__ import annotations
 
+import tempfile
 import time
 import uuid
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.api.store import load_dag, reset_dag, save_dag
+from app.causal.effect_estimation import CausalEffectResult, estimate_causal_effect
+from app.causal.sample_data import generate_synthetic_dataset
+from app.ingestion.file_loader import extract_text_from_file
+from app.ingestion.ir_extractor import extract_ir_data_points
+from app.ingestion.manual_loader import load_manual_data
+from app.ingestion.models import IRDataPoint
+from app.llm.template_generator import generate_industry_template
 from app.merge.goal import set_goal
-from app.models.dag import Edge, EdgeSign, EdgeStatus, FinancialCausalDAG
+from app.merge.ir_merge import merge_ir_data_points
+from app.models.dag import Edge, EdgeSign, EdgeStatus, FinancialCausalDAG, NodeSource
 from app.tuning.dialogue import apply_user_response, generate_next_proposal
 from app.tuning.models import TuningProposal
+
+MANUAL_DATA_SUFFIXES = {".csv", ".xlsx", ".xlsm"}
 
 app = FastAPI(title="IngaAnalytics API")
 
@@ -47,6 +59,20 @@ class EdgeCreateRequest(BaseModel):
 class TuningRespondRequest(BaseModel):
     proposal: TuningProposal
     user_response: str
+
+
+class TemplateGenerateRequest(BaseModel):
+    industry: str
+
+
+class IrMergeRequest(BaseModel):
+    data_points: list[IRDataPoint]
+    source: NodeSource = NodeSource.IR_DATA
+
+
+class CausalEstimateRequest(BaseModel):
+    treatment_node_id: str
+    outcome_node_id: str
 
 
 @app.get("/api/dag", response_model=FinancialCausalDAG)
@@ -110,3 +136,84 @@ def post_tuning_respond(body: TuningRespondRequest) -> FinancialCausalDAG:
     print(f"[tuning] apply_user_response took {time.monotonic() - started:.2f}s")
     save_dag(updated)
     return updated
+
+
+@app.post("/api/templates/generate", response_model=FinancialCausalDAG)
+def post_generate_template(body: TemplateGenerateRequest) -> FinancialCausalDAG:
+    """指定業界の標準DAGテンプレートをLLMで生成し、現在のDAGを置き換える。"""
+    try:
+        dag = generate_industry_template(body.industry)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+    save_dag(dag)
+    return dag
+
+
+@app.post("/api/ir/extract", response_model=list[IRDataPoint])
+async def post_ir_extract(file: UploadFile = File(...)) -> list[IRDataPoint]:
+    """アップロードされたIR資料(PDF/HTML/テキスト)または手動データ(CSV/Excel)から
+    財務・KPIデータを抽出する（まだDAGへのマージは行わない）。
+    """
+    suffix = Path(file.filename or "").suffix.lower()
+    content = await file.read()
+
+    with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
+        tmp.write(content)
+        tmp.flush()
+        tmp_path = Path(tmp.name)
+
+        if suffix in MANUAL_DATA_SUFFIXES:
+            try:
+                return load_manual_data(tmp_path)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            text = extract_text_from_file(tmp_path)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            return extract_ir_data_points(text, document_name=file.filename or "uploaded")
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+
+
+@app.post("/api/ir/merge", response_model=FinancialCausalDAG)
+def post_ir_merge(body: IrMergeRequest) -> FinancialCausalDAG:
+    """抽出済みのデータポイントを現在のDAGにマージする（一致する既存ノードの
+    由来を更新し、一致しないものは未接続の候補ノードとして追加する）。
+    """
+    dag = load_dag()
+    updated = merge_ir_data_points(dag, body.data_points, source=body.source)
+    save_dag(updated)
+    return updated
+
+
+@app.get("/api/causal/available-nodes", response_model=list[str])
+def get_causal_available_nodes() -> list[str]:
+    """因果効果推定のデモ用合成データが値を持つノードidの一覧。
+
+    このプロトタイプでは実測の時系列データを収集していないため、
+    サンプルDAG向けに用意した合成データの列に含まれるノードのみ
+    処置・結果として選択可能にする。
+    """
+    return list(generate_synthetic_dataset().columns)
+
+
+@app.post("/api/causal/estimate", response_model=CausalEffectResult)
+def post_causal_estimate(body: CausalEstimateRequest) -> CausalEffectResult:
+    """確定済み(user_confirmed/user_modified)のエッジ構造とサンプル合成データを
+    用いてDoWhyで因果効果を推定する。
+
+    注: このプロトタイプでは実測の時系列データをまだ収集していないため、
+    符号が既知の合成データ(app.causal.sample_data)を用いたデモ推定となる。
+    """
+    dag = load_dag()
+    data = generate_synthetic_dataset()
+    try:
+        return estimate_causal_effect(
+            dag, data, treatment_node_id=body.treatment_node_id, outcome_node_id=body.outcome_node_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

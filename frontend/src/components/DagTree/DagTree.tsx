@@ -17,8 +17,11 @@ import { DagNodeCard, type DagFlowNodeData } from "./DagNodeCard";
 import { SectionLabelNode } from "./SectionLabelNode";
 import { Legend } from "./Legend";
 import { DetailPanel } from "./DetailPanel";
-import { GoalBar } from "./GoalBar";
+import { Toolbar } from "./Toolbar";
 import { ChatTuning } from "../ChatTuning/ChatTuning";
+import { TemplateGeneratorPanel } from "../TemplateGenerator/TemplateGeneratorPanel";
+import { IrDataPanel } from "../IrData/IrDataPanel";
+import { EffectEstimationPanel } from "../CausalEffect/EffectEstimationPanel";
 
 const nodeTypes = { dagNode: DagNodeCard, sectionLabel: SectionLabelNode };
 
@@ -27,6 +30,9 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
+  const [isIrPanelOpen, setIsIrPanelOpen] = useState(false);
+  const [isEffectPanelOpen, setIsEffectPanelOpen] = useState(false);
 
   const nodeById = useMemo(
     () => Object.fromEntries(dag.nodes.map((n) => [n.id, n])),
@@ -103,11 +109,14 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-      <GoalBar
+      <Toolbar
         goal={dag.goal ?? ""}
-        onChange={handleGoalChange}
-        onToggleChat={() => setIsChatOpen((v) => !v)}
+        onGoalChange={handleGoalChange}
         isChatOpen={isChatOpen}
+        onToggleChat={() => setIsChatOpen((v) => !v)}
+        onOpenTemplateGenerator={() => setIsTemplatePanelOpen(true)}
+        onOpenIrData={() => setIsIrPanelOpen(true)}
+        onOpenEffectEstimation={() => setIsEffectPanelOpen(true)}
       />
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
         <Legend />
@@ -150,6 +159,18 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
       </div>
       {isChatOpen && (
         <ChatTuning dag={dag} setDag={setDag} onClose={() => setIsChatOpen(false)} />
+      )}
+      {isTemplatePanelOpen && (
+        <TemplateGeneratorPanel
+          onGenerated={setDag}
+          onClose={() => setIsTemplatePanelOpen(false)}
+        />
+      )}
+      {isIrPanelOpen && (
+        <IrDataPanel onMerged={setDag} onClose={() => setIsIrPanelOpen(false)} />
+      )}
+      {isEffectPanelOpen && (
+        <EffectEstimationPanel dag={dag} onClose={() => setIsEffectPanelOpen(false)} />
       )}
     </div>
   );
