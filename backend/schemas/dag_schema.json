@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ingaanalytics.local/schemas/dag_schema.json",
+  "title": "FinancialCausalDAG",
+  "description": "財務三表(PL/BS/CS)と非財務KPIの因果関係を表すDAGのデータモデル。Phase1のテンプレート生成、Phase3/4のマージ、Phase5の対話チューニングで共通して使用する。",
+  "type": "object",
+  "required": ["id", "name", "nodes", "edges"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "DAGインスタンスの一意なID"
+    },
+    "name": {
+      "type": "string",
+      "description": "このDAGの名称（例: '製造業_標準テンプレート_v1'）"
+    },
+    "industry": {
+      "type": ["string", "null"],
+      "description": "対象業界（例: '製造業', 'SaaS', '小売', 'インフラ'）。テンプレート由来の場合に設定"
+    },
+    "company": {
+      "type": ["string", "null"],
+      "description": "対象企業名。企業固有データをマージした場合に設定"
+    },
+    "goal": {
+      "type": ["string", "null"],
+      "description": "ユーザーが設定した今回の分析ゴール（例: '在庫削減による営業CSの改善'）"
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "tuning_state": {
+      "type": "object",
+      "description": "Phase5の対話チューニングの進行状態",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_started", "in_progress", "locked", "reopened"],
+          "description": "locked = 基本5ラウンド完了で確定済み。reopened = 任意追加ラウンドで再調整中"
+        },
+        "completed_rounds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "完了した基本ラウンド数（最大5）"
+        },
+        "rounds": {
+          "type": "array",
+          "description": "各ラウンドのやり取りの履歴",
+          "items": { "$ref": "#/$defs/tuningRound" }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": ["id", "label", "category", "source"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ノードの一意なID"
+        },
+        "label": {
+          "type": "string",
+          "description": "表示名（例: '営業利益', 'トラック稼働率'）"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["PL", "BS", "CS", "KPI_financial", "KPI_nonfinancial"],
+          "description": "財務三表のどれに属するか、または財務/非財務KPIか"
+        },
+        "statement": {
+          "type": ["string", "null"],
+          "description": "財務三表上の区分（例: '売上原価', '流動資産'）。KPIノードの場合はnull"
+        },
+        "unit": {
+          "type": ["string", "null"],
+          "description": "単位（例: '円', '%', '回/月'）"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "ノードの説明・補足"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["template", "ir_data", "user_added"],
+          "description": "このノードがどこ由来か: 業界標準テンプレート / 企業IRデータ / ユーザー手動追加"
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "source_node_id", "target_node_id", "sign", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "エッジの一意なID"
+        },
+        "source_node_id": {
+          "type": "string",
+          "description": "原因ノードのID"
+        },
+        "target_node_id": {
+          "type": "string",
+          "description": "結果ノードのID"
+        },
+        "sign": {
+          "type": "string",
+          "enum": ["positive", "negative", "ambiguous"],
+          "description": "影響の符号。可視化での色分け（緑実線=positive, 赤実線=negative）に対応"
+        },
+        "strength": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "影響の強さ・確信度（0〜1の目安値、任意）"
+        },
+        "lag": {
+          "type": ["object", "null"],
+          "description": "効果が現れるまでのタイムラグ（例: トラック稼働率の影響が3ヶ月後に出る場合）",
+          "properties": {
+            "value": { "type": "number" },
+            "unit": {
+              "type": "string",
+              "enum": ["day", "week", "month", "quarter", "year"]
+            }
+          },
+          "required": ["value", "unit"]
+        },
+        "rationale": {
+          "type": ["string", "null"],
+          "description": "このエッジをAIが提案した理由、またはユーザーが調整した理由"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ai_proposed", "user_confirmed", "user_modified", "rejected"],
+          "description": "可視化の実線/点線の切り替えに対応: ai_proposed=点線（未確認仮説）, user_confirmed/user_modified=実線（確定）"
+        },
+        "round_added": {
+          "type": ["integer", "null"],
+          "description": "このエッジが提案/確定されたチューニングラウンド番号（任意追加ラウンドの場合は5より大きい値）"
+        }
+      }
+    },
+    "tuningRound": {
+      "type": "object",
+      "required": ["round_number", "ai_message"],
+      "properties": {
+        "round_number": {
+          "type": "integer",
+          "description": "ラウンド番号（1〜5が基本ラウンド、6以降は任意追加ラウンド）"
+        },
+        "ai_message": {
+          "type": "string",
+          "description": "AIによる説明文＋質問"
+        },
+        "user_response": {
+          "type": ["string", "null"],
+          "description": "ユーザーの回答（自由記述含む）"
+        },
+        "applied_changes": {
+          "type": "array",
+          "description": "この回答を受けて実際にDAGへ適用された変更点（edge/node IDの追加・更新・削除の要約）",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
