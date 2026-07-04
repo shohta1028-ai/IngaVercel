@@ -58,6 +58,19 @@ export function Legend() {
         />
         <span>AI仮説（未確認）</span>
       </div>
+      <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>ノードの枠線</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span
+          style={{
+            width: 14,
+            height: 10,
+            border: "1px dashed var(--text-muted)",
+            borderRadius: 2,
+            display: "inline-block",
+          }}
+        />
+        <span>未接続の候補（ドラッグで紐付け）</span>
+      </div>
     </div>
   );
 }

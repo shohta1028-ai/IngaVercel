@@ -13,7 +13,8 @@
     { "id": "operating_cf", "label": "営業キャッシュフロー", "category": "CS", "statement": "営業活動によるCF", "unit": "円", "source": "template" },
     { "id": "plant_utilization_rate", "label": "工場稼働率", "category": "KPI_nonfinancial", "unit": "%", "source": "template" },
     { "id": "defect_rate", "label": "不良率", "category": "KPI_nonfinancial", "unit": "%", "source": "template" },
-    { "id": "truck_utilization_rate", "label": "トラック稼働率", "category": "KPI_nonfinancial", "unit": "%", "source": "user_added" }
+    { "id": "truck_utilization_rate", "label": "トラック稼働率", "category": "KPI_nonfinancial", "unit": "%", "source": "user_added" },
+    { "id": "inventory_turnover", "label": "在庫回転率", "category": "KPI_financial", "unit": "回/年", "source": "ir_data", "description": "Phase3のIRデータ取り込みで検出。まだツリーに未接続（分析ゴール「在庫削減」に関連する候補）" }
   ],
   "edges": [
     { "id": "e1", "source_node_id": "revenue", "target_node_id": "operating_income", "sign": "positive", "status": "user_confirmed" },
