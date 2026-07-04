@@ -17,6 +17,7 @@ import { SectionLabelNode } from "./SectionLabelNode";
 import { Legend } from "./Legend";
 import { DetailPanel } from "./DetailPanel";
 import { GoalBar } from "./GoalBar";
+import { ChatTuning } from "../ChatTuning/ChatTuning";
 
 const nodeTypes = { dagNode: DagNodeCard, sectionLabel: SectionLabelNode };
 
@@ -24,6 +25,7 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
   const [dag, setDag] = useState(initialDag);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const nodeById = useMemo(
     () => Object.fromEntries(dag.nodes.map((n) => [n.id, n])),
@@ -64,17 +66,20 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
 
   const flowEdges: FlowEdge[] = useMemo(
     () =>
-      dag.edges.map((e) => ({
-        id: e.id,
-        source: e.source_node_id,
-        target: e.target_node_id,
-        style: {
-          stroke: edgeColorVar(e.sign),
-          strokeWidth: 2,
-          strokeDasharray: edgeDashArray(e.status),
-        },
-        selected: e.id === selectedEdgeId,
-      })),
+      dag.edges
+        // 却下(rejected)されたエッジは対話履歴には残すが、ツリー上には描画しない
+        .filter((e) => e.status !== "rejected")
+        .map((e) => ({
+          id: e.id,
+          source: e.source_node_id,
+          target: e.target_node_id,
+          style: {
+            stroke: edgeColorVar(e.sign),
+            strokeWidth: 2,
+            strokeDasharray: edgeDashArray(e.status),
+          },
+          selected: e.id === selectedEdgeId,
+        })),
     [dag.edges, selectedEdgeId]
   );
 
@@ -99,7 +104,12 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-      <GoalBar goal={dag.goal ?? ""} onChange={(goal) => setDag((prev) => ({ ...prev, goal }))} />
+      <GoalBar
+        goal={dag.goal ?? ""}
+        onChange={(goal) => setDag((prev) => ({ ...prev, goal }))}
+        onToggleChat={() => setIsChatOpen((v) => !v)}
+        isChatOpen={isChatOpen}
+      />
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
         <Legend />
         <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
@@ -139,6 +149,9 @@ export function DagTree({ dag: initialDag }: { dag: FinancialCausalDAG }) {
           }}
         />
       </div>
+      {isChatOpen && (
+        <ChatTuning dag={dag} setDag={setDag} onClose={() => setIsChatOpen(false)} />
+      )}
     </div>
   );
 }

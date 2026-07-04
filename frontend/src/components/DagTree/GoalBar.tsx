@@ -1,9 +1,13 @@
 export function GoalBar({
   goal,
   onChange,
+  onToggleChat,
+  isChatOpen,
 }: {
   goal: string;
   onChange: (goal: string) => void;
+  onToggleChat: () => void;
+  isChatOpen: boolean;
 }) {
   return (
     <div
@@ -38,6 +42,21 @@ export function GoalBar({
           color: "var(--text-primary)",
         }}
       />
+      <button
+        onClick={onToggleChat}
+        style={{
+          fontSize: 12,
+          padding: "6px 12px",
+          borderRadius: 6,
+          border: "1px solid var(--border-hairline)",
+          background: isChatOpen ? "var(--cat-pl)" : "var(--page-plane)",
+          color: isChatOpen ? "#ffffff" : "var(--text-primary)",
+          cursor: "pointer",
+          flexShrink: 0,
+        }}
+      >
+        対話チューニング
+      </button>
     </div>
   );
 }

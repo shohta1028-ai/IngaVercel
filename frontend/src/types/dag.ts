@@ -46,6 +46,21 @@ export interface DagEdge {
   round_added?: number | null;
 }
 
+export type TuningStatus = "not_started" | "in_progress" | "locked" | "reopened";
+
+export interface TuningRound {
+  round_number: number;
+  ai_message: string;
+  user_response?: string | null;
+  applied_changes: string[];
+}
+
+export interface TuningState {
+  status: TuningStatus;
+  completed_rounds: number;
+  rounds: TuningRound[];
+}
+
 export interface FinancialCausalDAG {
   id: string;
   name: string;
@@ -54,4 +69,5 @@ export interface FinancialCausalDAG {
   goal?: string | null;
   nodes: DagNode[];
   edges: DagEdge[];
+  tuning_state?: TuningState;
 }
