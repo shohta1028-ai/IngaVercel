@@ -1,4 +1,4 @@
-import type { EdgeSign, EdgeStatus, NodeCategory } from "../types/dag";
+import type { EdgeSign, NodeCategory } from "../types/dag";
 
 export const CATEGORY_COLOR_VAR: Record<NodeCategory, string> = {
   PL: "var(--cat-pl)",
@@ -25,9 +25,4 @@ export function edgeColorVar(sign: EdgeSign): string {
     case "ambiguous":
       return "var(--status-ambiguous)";
   }
-}
-
-export function edgeDashArray(status: EdgeStatus): string | undefined {
-  // AIの仮説（未確認）は点線、ユーザーが確認・修正済みのものは実線
-  return status === "ai_proposed" ? "6 4" : undefined;
 }

@@ -175,3 +175,38 @@ def test_causal_estimate_unknown_node_returns_400(client):
         json={"treatment_node_id": "nonexistent", "outcome_node_id": "cogs"},
     )
     assert response.status_code == 400
+
+
+def test_causal_edge_effects_returns_value_for_each_confirmed_edge(client):
+    dag = client.get("/api/dag").json()
+    confirmed_edge_ids = {
+        e["id"] for e in dag["edges"] if e["status"] in ("user_confirmed", "user_modified")
+    }
+
+    response = client.post("/api/causal/edge-effects")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body.keys()) == confirmed_edge_ids
+    assert all(isinstance(v, float) for v in body.values())
+
+
+def test_causal_whatif_projects_downstream_nodes(client):
+    response = client.post(
+        "/api/causal/whatif",
+        json={"source_node_id": "plant_utilization_rate", "delta_percent": 10},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    node_ids = {p["node_id"] for p in body}
+    assert "cogs" in node_ids
+    first = body[0]
+    assert first["projected"] == pytest.approx(first["baseline"] + first["delta_absolute"])
+
+
+def test_causal_whatif_unknown_node_returns_400(client):
+    response = client.post(
+        "/api/causal/whatif",
+        json={"source_node_id": "nonexistent", "delta_percent": 10},
+    )
+    assert response.status_code == 400

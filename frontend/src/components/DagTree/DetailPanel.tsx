@@ -30,15 +30,15 @@ export function DetailPanel({
   return (
     <div
       style={{
-        width: 280,
-        flexShrink: 0,
         boxSizing: "border-box",
         background: "var(--surface-1)",
-        borderLeft: "1px solid var(--border-hairline)",
+        borderBottom: "1px solid var(--border-hairline)",
         padding: "16px 16px",
         fontSize: 13,
         color: "var(--text-primary)",
         overflowY: "auto",
+        maxHeight: "45%",
+        flexShrink: 0,
       }}
     >
       <button

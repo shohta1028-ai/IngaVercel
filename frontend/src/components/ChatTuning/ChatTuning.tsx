@@ -3,6 +3,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { FinancialCausalDAG } from "../../types/dag";
 import type { TuningProposal } from "../../api/tuningTypes";
 import { fetchTuningProposal, respondToTuningProposal } from "../../api/client";
+import { useReasoningLog } from "../ReasoningLog/useReasoningLog";
+import { JARGON } from "../ReasoningLog/useReasoningLog";
 
 type ChatMessage = { role: "ai" | "user"; text: string };
 
@@ -28,6 +30,7 @@ export function ChatTuning({
   const [error, setError] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
   const hasFetchedInitial = useRef(false);
+  const { pushLogEntry } = useReasoningLog();
 
   const tuningState = dag.tuning_state ?? defaultTuningState();
 
@@ -43,6 +46,12 @@ export function ChatTuning({
       if (proposal) {
         setCurrentProposal(proposal);
         setMessages((prev) => [...prev, { role: "ai", text: proposal.ai_message }]);
+        pushLogEntry({
+          phase: "discovery",
+          method: "LLM仮説生成",
+          message: proposal.ai_message,
+          jargon: [{ term: "LLM仮説生成", explanation: JARGON["LLM仮説生成"] }],
+        });
       } else {
         setCurrentProposal(null);
         setMessages((prev) => [
@@ -76,6 +85,11 @@ export function ChatTuning({
     try {
       const updatedDag = await respondToTuningProposal(currentProposal, text);
       setDag(updatedDag);
+      pushLogEntry({
+        phase: "discovery",
+        method: "LLM仮説生成",
+        message: `回答「${text}」を解釈し、因果構造への反映を判断しました。`,
+      });
       setCurrentProposal(null);
       await loadNextProposal();
     } catch (e) {

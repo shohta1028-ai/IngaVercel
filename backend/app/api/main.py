@@ -22,7 +22,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.api.store import load_dag, reset_dag, save_dag
-from app.causal.effect_estimation import CausalEffectResult, estimate_causal_effect
+from app.causal.effect_estimation import (
+    CausalEffectResult,
+    WhatIfProjection,
+    compute_edge_effects,
+    compute_whatif,
+    estimate_causal_effect,
+)
 from app.causal.sample_data import generate_synthetic_dataset
 from app.ingestion.file_loader import extract_text_from_file
 from app.ingestion.ir_extractor import extract_ir_data_points
@@ -73,6 +79,11 @@ class IrMergeRequest(BaseModel):
 class CausalEstimateRequest(BaseModel):
     treatment_node_id: str
     outcome_node_id: str
+
+
+class WhatIfRequest(BaseModel):
+    source_node_id: str
+    delta_percent: float
 
 
 @app.get("/api/dag", response_model=FinancialCausalDAG)
@@ -215,5 +226,29 @@ def post_causal_estimate(body: CausalEstimateRequest) -> CausalEffectResult:
         return estimate_causal_effect(
             dag, data, treatment_node_id=body.treatment_node_id, outcome_node_id=body.outcome_node_id
         )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/causal/edge-effects", response_model=dict[str, float])
+def post_causal_edge_effects() -> dict[str, float]:
+    """確定済みの全エッジについて、それぞれの直接効果(source→target)を
+    一括推定する。推論モードへの遷移時にツリーの各エッジへ数値を
+    刻印するために使う（デモ用合成データによる推定）。
+    """
+    dag = load_dag()
+    data = generate_synthetic_dataset()
+    return compute_edge_effects(dag, data)
+
+
+@app.post("/api/causal/whatif", response_model=list[WhatIfProjection])
+def post_causal_whatif(body: WhatIfRequest) -> list[WhatIfProjection]:
+    """起点ノードがdelta_percent(%)だけ変化した場合の、下流ノードの
+    予測値をWhat-ifシミュレーターのスライダー操作から呼び出す。
+    """
+    dag = load_dag()
+    data = generate_synthetic_dataset()
+    try:
+        return compute_whatif(dag, data, body.source_node_id, body.delta_percent)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

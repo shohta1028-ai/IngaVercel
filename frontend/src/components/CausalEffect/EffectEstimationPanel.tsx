@@ -3,6 +3,8 @@ import { Modal } from "../Modal";
 import { estimateCausalEffect, fetchCausalAvailableNodes } from "../../api/client";
 import type { CausalEffectResult } from "../../api/causalTypes";
 import type { FinancialCausalDAG } from "../../types/dag";
+import { useReasoningLog } from "../ReasoningLog/useReasoningLog";
+import { JARGON } from "../ReasoningLog/useReasoningLog";
 
 export function EffectEstimationPanel({
   dag,
@@ -17,6 +19,7 @@ export function EffectEstimationPanel({
   const [result, setResult] = useState<CausalEffectResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { pushLogEntry } = useReasoningLog();
 
   const nodeById = Object.fromEntries(dag.nodes.map((n) => [n.id, n]));
 
@@ -42,6 +45,15 @@ export function EffectEstimationPanel({
     try {
       const r = await estimateCausalEffect(treatment, outcome);
       setResult(r);
+      pushLogEntry({
+        phase: "inference",
+        method: "DoWhy backdoor.linear_regression",
+        message: `「${nodeById[treatment]?.label ?? treatment}」→「${nodeById[outcome]?.label ?? outcome}」への効果を${r.estimated_effect.toFixed(4)}と算出しました。`,
+        jargon: [
+          { term: "バックドア調整変数", explanation: JARGON["バックドア調整変数"] },
+          { term: "backdoor.linear_regression", explanation: JARGON["backdoor.linear_regression"] },
+        ],
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -143,13 +155,13 @@ export function EffectEstimationPanel({
                 padding: "8px 16px",
                 borderRadius: 6,
                 border: "none",
-                background: "var(--cat-pl)",
+                background: "var(--mode-inference-accent)",
                 color: "#ffffff",
                 cursor: isLoading ? "default" : "pointer",
                 opacity: isLoading || treatment === outcome ? 0.6 : 1,
               }}
             >
-              {isLoading ? "推定中…" : "推定する"}
+              {isLoading ? "推論中…" : "因果効果を推論する"}
             </button>
           </div>
         </>
