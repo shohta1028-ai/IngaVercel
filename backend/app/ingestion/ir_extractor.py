@@ -12,6 +12,10 @@ from app.ingestion.models import IRDataPoint, IRDataPointKind, IRDataSource
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 
+# 巨大なIR資料を全文投入するとLLM呼び出しが不安定になるため、先頭のみ使う。
+# 決算短信・説明会資料は主要な数値が冒頭にまとまっていることが多い。
+MAX_DOCUMENT_TEXT_CHARS = 40_000
+
 SYSTEM_PROMPT = """\
 あなたは証券アナリストです。企業のIR資料（決算短信・有価証券報告書・
 説明会資料）のテキストから、以下2種類の情報を抽出してください。
@@ -73,12 +77,19 @@ def extract_ir_data_points(
     """
     client = client or Anthropic()
 
+    truncated_text = document_text[:MAX_DOCUMENT_TEXT_CHARS]
+
     response = client.messages.create(
         model=model,
         max_tokens=4000,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": build_user_prompt(document_text)}],
+        messages=[{"role": "user", "content": build_user_prompt(truncated_text)}],
     )
     raw_text = "".join(block.text for block in response.content if block.type == "text")
+
+    if not raw_text.strip():
+        raise ValueError(
+            "LLMから空の応答が返されました。資料のサイズが大きすぎる可能性があります。"
+        )
 
     return _parse_llm_data_points(raw_text, document_name)

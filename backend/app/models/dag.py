@@ -59,6 +59,9 @@ class Node(BaseModel):
     unit: Optional[str] = None
     description: Optional[str] = None
     source: NodeSource
+    # 期間ラベル(例: "2025年3月期") -> その期の実測値。実データがある
+    # ノードのみ設定する（無いノードはNoneのまま＝構造のみの推定値扱い）
+    values_by_period: Optional[dict[str, float]] = None
 
 
 class Lag(BaseModel):
@@ -102,3 +105,6 @@ class FinancialCausalDAG(BaseModel):
     tuning_state: TuningState = Field(default_factory=TuningState)
     nodes: list[Node]
     edges: list[Edge]
+    # 表示・切替可能な会計期間のラベル一覧（末尾が最新期）。
+    # Nodeのvalues_by_periodのキーと対応する
+    available_periods: list[str] = Field(default_factory=list)

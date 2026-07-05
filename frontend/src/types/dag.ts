@@ -27,6 +27,7 @@ export interface DagNode {
   unit?: string | null;
   description?: string | null;
   source: NodeSource;
+  values_by_period?: Record<string, number> | null;
 }
 
 export interface DagLag {
@@ -70,4 +71,5 @@ export interface FinancialCausalDAG {
   nodes: DagNode[];
   edges: DagEdge[];
   tuning_state?: TuningState;
+  available_periods?: string[];
 }

@@ -4,10 +4,12 @@ export function Modal({
   title,
   onClose,
   children,
+  width = 480,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  width?: number;
 }) {
   return (
     <div
@@ -25,7 +27,7 @@ export function Modal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 480,
+          width,
           maxWidth: "90vw",
           maxHeight: "80vh",
           overflowY: "auto",

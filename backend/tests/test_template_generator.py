@@ -1,10 +1,14 @@
 import json
 from dataclasses import dataclass
 
-from app.llm.template_generator import generate_industry_template
+from app.llm.template_generator import (
+    generate_industry_template,
+    generate_industry_template_with_summary,
+)
 from app.models.dag import EdgeSign, EdgeStatus, NodeCategory, NodeSource
 
 FAKE_LLM_JSON = {
+    "summary": "製造業は設備投資と稼働率が原価構造を左右し、在庫水準が運転資本に直結する。",
     "nodes": [
         {
             "id": "revenue",
@@ -85,3 +89,13 @@ def test_generate_industry_template_parses_llm_output_into_dag():
     for edge in dag.edges:
         assert edge.status == EdgeStatus.AI_PROPOSED
         assert edge.sign in (EdgeSign.POSITIVE, EdgeSign.NEGATIVE, EdgeSign.AMBIGUOUS)
+
+
+def test_generate_industry_template_with_summary_returns_dag_and_summary():
+    dag, summary = generate_industry_template_with_summary(
+        "製造業", client=_FakeAnthropicClient()
+    )
+
+    assert dag.industry == "製造業"
+    assert len(dag.nodes) == 3
+    assert summary == FAKE_LLM_JSON["summary"]

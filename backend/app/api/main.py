@@ -22,12 +22,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.api.store import load_dag, reset_dag, save_dag
-from app.causal.effect_estimation import CausalEffectResult, estimate_causal_effect
-from app.causal.sample_data import generate_synthetic_dataset
+from app.causal.effect_estimation import (
+    CausalEffectResult,
+    WhatIfProjection,
+    compute_edge_effects,
+    compute_whatif,
+    estimate_causal_effect,
+)
+from app.causal.sample_data import generate_synthetic_dataset_for_dag
 from app.ingestion.file_loader import extract_text_from_file
 from app.ingestion.ir_extractor import extract_ir_data_points
 from app.ingestion.manual_loader import load_manual_data
 from app.ingestion.models import IRDataPoint
+from app.api.template_library import (
+    TemplateLibraryEntry,
+    TemplateLibraryListItem,
+    get_or_generate_entry,
+    list_catalog,
+)
 from app.llm.template_generator import generate_industry_template
 from app.merge.goal import set_goal
 from app.merge.ir_merge import merge_ir_data_points
@@ -73,6 +85,11 @@ class IrMergeRequest(BaseModel):
 class CausalEstimateRequest(BaseModel):
     treatment_node_id: str
     outcome_node_id: str
+
+
+class WhatIfRequest(BaseModel):
+    source_node_id: str
+    delta_percent: float
 
 
 @app.get("/api/dag", response_model=FinancialCausalDAG)
@@ -149,6 +166,38 @@ def post_generate_template(body: TemplateGenerateRequest) -> FinancialCausalDAG:
     return dag
 
 
+@app.get("/api/template-library", response_model=list[TemplateLibraryListItem])
+def get_template_library() -> list[TemplateLibraryListItem]:
+    """業界カタログの一覧。生成済み(cached=true)のものはsummaryを含む。"""
+    return list_catalog()
+
+
+@app.get("/api/template-library/{industry_id}", response_model=TemplateLibraryEntry)
+def get_template_library_entry(industry_id: str) -> TemplateLibraryEntry:
+    """カタログの1業界の詳細(DAG＋サマリー)。未生成なら初回アクセス時に
+    LLMで生成しキャッシュする。
+    """
+    try:
+        return get_or_generate_entry(industry_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+
+
+@app.post("/api/template-library/{industry_id}/apply", response_model=FinancialCausalDAG)
+def post_apply_template_library_entry(industry_id: str) -> FinancialCausalDAG:
+    """カタログのテンプレートを現在の作業DAGとして採用する。"""
+    try:
+        entry = get_or_generate_entry(industry_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+    save_dag(entry.dag)
+    return entry.dag
+
+
 @app.post("/api/ir/extract", response_model=list[IRDataPoint])
 async def post_ir_extract(file: UploadFile = File(...)) -> list[IRDataPoint]:
     """アップロードされたIR資料(PDF/HTML/テキスト)または手動データ(CSV/Excel)から
@@ -195,10 +244,11 @@ def get_causal_available_nodes() -> list[str]:
     """因果効果推定のデモ用合成データが値を持つノードidの一覧。
 
     このプロトタイプでは実測の時系列データを収集していないため、
-    サンプルDAG向けに用意した合成データの列に含まれるノードのみ
+    現在のDAG構造から生成した合成データの列（＝現在のDAGの全ノード）を
     処置・結果として選択可能にする。
     """
-    return list(generate_synthetic_dataset().columns)
+    dag = load_dag()
+    return list(generate_synthetic_dataset_for_dag(dag).columns)
 
 
 @app.post("/api/causal/estimate", response_model=CausalEffectResult)
@@ -207,13 +257,38 @@ def post_causal_estimate(body: CausalEstimateRequest) -> CausalEffectResult:
     用いてDoWhyで因果効果を推定する。
 
     注: このプロトタイプでは実測の時系列データをまだ収集していないため、
-    符号が既知の合成データ(app.causal.sample_data)を用いたデモ推定となる。
+    現在のDAG構造から生成した合成データ(app.causal.sample_data)を用いた
+    デモ推定となる。
     """
     dag = load_dag()
-    data = generate_synthetic_dataset()
+    data = generate_synthetic_dataset_for_dag(dag)
     try:
         return estimate_causal_effect(
             dag, data, treatment_node_id=body.treatment_node_id, outcome_node_id=body.outcome_node_id
         )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/causal/edge-effects", response_model=dict[str, float])
+def post_causal_edge_effects() -> dict[str, float]:
+    """確定済みの全エッジについて、それぞれの直接効果(source→target)を
+    一括推定する。推論モードへの遷移時にツリーの各エッジへ数値を
+    刻印するために使う（デモ用合成データによる推定）。
+    """
+    dag = load_dag()
+    data = generate_synthetic_dataset_for_dag(dag)
+    return compute_edge_effects(dag, data)
+
+
+@app.post("/api/causal/whatif", response_model=list[WhatIfProjection])
+def post_causal_whatif(body: WhatIfRequest) -> list[WhatIfProjection]:
+    """起点ノードがdelta_percent(%)だけ変化した場合の、下流ノードの
+    予測値をWhat-ifシミュレーターのスライダー操作から呼び出す。
+    """
+    dag = load_dag()
+    data = generate_synthetic_dataset_for_dag(dag)
+    try:
+        return compute_whatif(dag, data, body.source_node_id, body.delta_percent)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

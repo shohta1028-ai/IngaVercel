@@ -8,9 +8,11 @@
 
 from __future__ import annotations
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 
+from app.causal.graph_builder import build_confirmed_graph
 from app.models.dag import (
     Edge,
     EdgeSign,
@@ -119,3 +121,60 @@ def generate_synthetic_dataset(n: int = 300, seed: int = 0) -> pd.DataFrame:
             "truck_utilization_rate": truck_utilization_rate,
         }
     )
+
+
+def generate_synthetic_dataset_for_dag(
+    dag: FinancialCausalDAG, n: int = 300, seed: int = 0
+) -> pd.DataFrame:
+    """任意のDAGについて、確定済みエッジの符号と整合する合成時系列データを
+    ノードごとに生成する。
+
+    特定の9ノードに決め打ちだった generate_synthetic_dataset() と異なり、
+    どのDAG（テンプレートライブラリの業界テンプレート、IR取込み後の構造、
+    対話チューニングで変化した構造等）に対しても、現在のノード全件に対応する
+    列を持つデータフレームを返す。これにより因果効果推定・エッジ効果一括
+    推定・What-ifシミュレーターが「データ不足」で止まらないようにする。
+
+    親ノードを持たないノードはベースライン分布のみ、親を持つノードは各親を
+    z-score標準化した値をエッジの符号に応じた係数で線形結合し、ノイズを
+    加えて生成する（単位・スケールの整合性よりも、符号の向きが正しく
+    再現されることを優先した簡易モデル）。
+    """
+    rng = np.random.default_rng(seed)
+    graph = build_confirmed_graph(dag)
+    order = list(nx.topological_sort(graph))
+
+    values: dict[str, np.ndarray] = {}
+    for node_id in order:
+        baseline = rng.normal(100, 15, n)
+        parent_ids = list(graph.predecessors(node_id))
+        if not parent_ids:
+            values[node_id] = baseline
+            continue
+
+        total_effect = np.zeros(n)
+        for parent_id in parent_ids:
+            edge = next(
+                e
+                for e in dag.edges
+                if e.source_node_id == parent_id
+                and e.target_node_id == node_id
+                and e.status in {EdgeStatus.USER_CONFIRMED, EdgeStatus.USER_MODIFIED}
+            )
+            parent_values = values[parent_id]
+            std = parent_values.std()
+            z = (parent_values - parent_values.mean()) / (std if std > 1e-9 else 1.0)
+
+            magnitude = rng.uniform(8, 20)
+            if edge.sign == EdgeSign.NEGATIVE:
+                coef = -magnitude
+            elif edge.sign == EdgeSign.POSITIVE:
+                coef = magnitude
+            else:  # ambiguous: 方向をランダムに決める
+                coef = magnitude * rng.choice([-1, 1])
+            total_effect += coef * z
+
+        noise = rng.normal(0, 5, n)
+        values[node_id] = baseline + total_effect + noise
+
+    return pd.DataFrame(values)

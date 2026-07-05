@@ -16,6 +16,16 @@
   --status-good: #0ca30c;
   --status-critical: #d03b3b;
   --status-ambiguous: #898781;
+
+  /* モードアクセント: 探索(発見)フェーズ=青紫、推論(計算)フェーズ=緑金。
+     背景・文字色などのベーストーンはライト/ダークのまま変えず、
+     ボタンや強調枠などの「操作対象」だけをこの色で塗る */
+  --mode-discovery-accent: #6d5bd0;
+  --mode-discovery-accent-soft: #efeafc;
+  --mode-discovery-accent-strong: #5340b8;
+  --mode-inference-accent: #1f9e59;
+  --mode-inference-accent-soft: #e6f5ec;
+  --mode-inference-gold: #ad7a09;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,6 +47,13 @@
     --status-good: #0ca30c;
     --status-critical: #e66767;
     --status-ambiguous: #898781;
+
+    --mode-discovery-accent: #9184e3;
+    --mode-discovery-accent-soft: #241f38;
+    --mode-discovery-accent-strong: #a99cf0;
+    --mode-inference-accent: #28a05e;
+    --mode-inference-accent-soft: #163325;
+    --mode-inference-gold: #d6a92f;
   }
 }
 
@@ -58,6 +75,13 @@
   --status-good: #0ca30c;
   --status-critical: #e66767;
   --status-ambiguous: #898781;
+
+  --mode-discovery-accent: #9184e3;
+  --mode-discovery-accent-soft: #241f38;
+  --mode-discovery-accent-strong: #a99cf0;
+  --mode-inference-accent: #3fc97e;
+  --mode-inference-accent-soft: #163325;
+  --mode-inference-gold: #d6a92f;
 }
 
 :root[data-theme="light"] {
@@ -78,6 +102,13 @@
   --status-good: #0ca30c;
   --status-critical: #d03b3b;
   --status-ambiguous: #898781;
+
+  --mode-discovery-accent: #6d5bd0;
+  --mode-discovery-accent-soft: #efeafc;
+  --mode-discovery-accent-strong: #5340b8;
+  --mode-inference-accent: #1f9e59;
+  --mode-inference-accent-soft: #e6f5ec;
+  --mode-inference-gold: #ad7a09;
 }
 
 html,
@@ -102,4 +133,19 @@ body,
 
 .react-flow__attribution {
   display: none;
+}
+
+/* 探索モード中のAI仮説エッジ: 光が流れるような点線アニメーション */
+@keyframes inga-dash-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes inga-dash-flow {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
 }

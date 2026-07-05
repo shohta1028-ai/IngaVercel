@@ -38,6 +38,8 @@ DAG(有向非巡回グラフ)として構造化してください。
 一切出力しないでください。
 
 {
+  "summary": "この業界の会計的特徴（PL/BS/CSの連動の勘所や業界特有の重要指標
+    がなぜ重要か）を2〜3文で説明した日本語の文章",
   "nodes": [
     {
       "id": "snake_case_の一意なID",
@@ -70,9 +72,7 @@ def build_user_prompt(industry: str) -> str:
     return f"対象業界: {industry}\n上記の制約に従い、この業界の標準的な因果DAGをJSONで出力してください。"
 
 
-def _parse_llm_nodes_and_edges(raw_json: str) -> tuple[list[Node], list[Edge]]:
-    data = json.loads(extract_json_text(raw_json))
-
+def _parse_llm_nodes_and_edges(data: dict) -> tuple[list[Node], list[Edge]]:
     nodes = [
         Node(
             id=n["id"],
@@ -102,12 +102,12 @@ def _parse_llm_nodes_and_edges(raw_json: str) -> tuple[list[Node], list[Edge]]:
     return nodes, edges
 
 
-def generate_industry_template(
+def _generate_raw(
     industry: str,
-    client: Anthropic | None = None,
-    model: str = DEFAULT_MODEL,
-) -> FinancialCausalDAG:
-    """指定業界の標準DAGテンプレートをLLMで生成する。
+    client: Anthropic | None,
+    model: str,
+) -> dict:
+    """LLMを呼び出し、パース済みのJSON(nodes/edges/summary)を返す。
 
     Anthropic APIを実際に呼び出すため、環境変数 ANTHROPIC_API_KEY が必要。
     """
@@ -122,9 +122,10 @@ def generate_industry_template(
     raw_text = "".join(
         block.text for block in response.content if block.type == "text"
     )
+    return json.loads(extract_json_text(raw_text))
 
-    nodes, edges = _parse_llm_nodes_and_edges(raw_text)
 
+def _build_dag(industry: str, nodes: list[Node], edges: list[Edge]) -> FinancialCausalDAG:
     now = datetime.now(timezone.utc)
     return FinancialCausalDAG(
         id=f"dag_{uuid.uuid4().hex[:8]}",
@@ -137,3 +138,33 @@ def generate_industry_template(
         nodes=nodes,
         edges=edges,
     )
+
+
+def generate_industry_template(
+    industry: str,
+    client: Anthropic | None = None,
+    model: str = DEFAULT_MODEL,
+) -> FinancialCausalDAG:
+    """指定業界の標準DAGテンプレートをLLMで生成する。
+
+    Anthropic APIを実際に呼び出すため、環境変数 ANTHROPIC_API_KEY が必要。
+    """
+    data = _generate_raw(industry, client, model)
+    nodes, edges = _parse_llm_nodes_and_edges(data)
+    return _build_dag(industry, nodes, edges)
+
+
+def generate_industry_template_with_summary(
+    industry: str,
+    client: Anthropic | None = None,
+    model: str = DEFAULT_MODEL,
+) -> tuple[FinancialCausalDAG, str]:
+    """指定業界の標準DAGテンプレートと、業界の会計的特徴を説明する
+    サマリー文を合わせてLLMで生成する（テンプレートライブラリ機能用）。
+
+    Anthropic APIを実際に呼び出すため、環境変数 ANTHROPIC_API_KEY が必要。
+    """
+    data = _generate_raw(industry, client, model)
+    nodes, edges = _parse_llm_nodes_and_edges(data)
+    dag = _build_dag(industry, nodes, edges)
+    return dag, data["summary"]
