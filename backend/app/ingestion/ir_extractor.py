@@ -81,7 +81,7 @@ def extract_ir_data_points(
 
     response = client.messages.create(
         model=model,
-        max_tokens=4000,
+        max_tokens=8000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": build_user_prompt(truncated_text)}],
     )
@@ -92,4 +92,16 @@ def extract_ir_data_points(
             "LLMから空の応答が返されました。資料のサイズが大きすぎる可能性があります。"
         )
 
-    return _parse_llm_data_points(raw_text, document_name)
+    if response.stop_reason == "max_tokens":
+        raise ValueError(
+            "抽出結果が多すぎてLLMの最大出力トークン数に達し、応答が途中で"
+            "打ち切られました。資料に含まれる指標数が多い可能性があります。"
+        )
+
+    try:
+        return _parse_llm_data_points(raw_text, document_name)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"LLMの応答をJSONとして解釈できませんでした（想定外の形式で応答された"
+            f"可能性があります）: {e}"
+        ) from e

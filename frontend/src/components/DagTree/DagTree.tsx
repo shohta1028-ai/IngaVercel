@@ -160,6 +160,12 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
     setIsIrPanelOpen(true);
   }
 
+  function handleIrDataMerged(newDag: FinancialCausalDAG) {
+    setDag(newDag);
+    setIsIrPanelOpen(false);
+    setIsChatOpen(true); // 未接続ノードの接続をAIにアシストしてもらう
+  }
+
   async function handleToggleMode() {
     if (mode === "discovery") {
       setMode("inference");
@@ -268,7 +274,7 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
         />
       )}
       {isIrPanelOpen && (
-        <IrDataPanel onMerged={setDag} onClose={() => setIsIrPanelOpen(false)} />
+        <IrDataPanel onMerged={handleIrDataMerged} onClose={() => setIsIrPanelOpen(false)} />
       )}
       {isEffectPanelOpen && (
         <EffectEstimationPanel dag={dag} onClose={() => setIsEffectPanelOpen(false)} />
