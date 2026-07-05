@@ -3,6 +3,7 @@ import type { TuningProposal } from "./tuningTypes";
 import type { IRDataPoint } from "./irTypes";
 import type { CausalEffectResult, WhatIfProjection } from "./causalTypes";
 import type { TemplateLibraryEntry, TemplateLibraryListItem } from "./templateLibraryTypes";
+import type { EdinetDocumentSummary } from "./edinetTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -90,6 +91,26 @@ export function extractIrData(file: File): Promise<IRDataPoint[]> {
   const formData = new FormData();
   formData.append("file", file);
   return requestForm<IRDataPoint[]>("/api/ir/extract", formData);
+}
+
+export function searchEdinetDocuments(
+  company: string,
+  fromDate: string,
+  toDate: string
+): Promise<EdinetDocumentSummary[]> {
+  const params = new URLSearchParams({ company, from_date: fromDate, to_date: toDate });
+  return request<EdinetDocumentSummary[]>(`/api/edinet/search?${params.toString()}`);
+}
+
+export function fetchEdinetDocument(
+  docId: string,
+  filerName?: string,
+  docDescription?: string
+): Promise<IRDataPoint[]> {
+  return request<IRDataPoint[]>("/api/edinet/fetch", {
+    method: "POST",
+    body: JSON.stringify({ doc_id: docId, filer_name: filerName, doc_description: docDescription }),
+  });
 }
 
 export function mergeIrData(

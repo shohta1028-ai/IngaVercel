@@ -315,3 +315,81 @@ def test_template_library_apply_replaces_current_dag(client, monkeypatch):
 
     current = client.get("/api/dag").json()
     assert current["id"] == "dag_fake_retail"
+
+
+def test_edinet_search_returns_results(client, monkeypatch):
+    from app.ingestion.edinet_client import EdinetDocumentSummary
+
+    fake_results = [
+        EdinetDocumentSummary(
+            doc_id="S100ABCD",
+            filer_name="ファナック株式会社",
+            sec_code="69540",
+            doc_description="有価証券報告書",
+            period_end="2026-03-31",
+            submit_date_time="2026-06-24T09:00",
+        )
+    ]
+    monkeypatch.setattr(
+        "app.api.main.search_documents",
+        lambda company, from_date, to_date: fake_results,
+    )
+
+    response = client.get(
+        "/api/edinet/search",
+        params={"company": "ファナック", "from_date": "2026-06-01", "to_date": "2026-06-24"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["doc_id"] == "S100ABCD"
+
+
+def test_edinet_search_invalid_range_returns_400(client, monkeypatch):
+    def _raise(company, from_date, to_date):
+        raise ValueError("検索できる日付範囲は最大31日間です")
+
+    monkeypatch.setattr("app.api.main.search_documents", _raise)
+
+    response = client.get(
+        "/api/edinet/search",
+        params={"company": "ファナック", "from_date": "2026-01-01", "to_date": "2026-12-31"},
+    )
+    assert response.status_code == 400
+
+
+def test_edinet_fetch_returns_data_points(client, monkeypatch):
+    fake_points = [
+        IRDataPoint(
+            label="売上高",
+            kind=IRDataPointKind.FINANCIAL,
+            value=857831,
+            unit="百万円",
+            source=IRDataSource(document_name="EDINET: ファナック株式会社 有価証券報告書"),
+        )
+    ]
+    monkeypatch.setattr("app.api.main.fetch_document_pdf", lambda doc_id: b"%PDF-1.4 dummy")
+    monkeypatch.setattr("app.api.main.extract_text_from_file", lambda path: "ダミーテキスト")
+    monkeypatch.setattr(
+        "app.api.main.extract_ir_data_points", lambda text, document_name: fake_points
+    )
+
+    response = client.post(
+        "/api/edinet/fetch",
+        json={"doc_id": "S100ABCD", "filer_name": "ファナック株式会社", "doc_description": "有価証券報告書"},
+    )
+    assert response.status_code == 200
+    assert response.json()[0]["label"] == "売上高"
+
+
+def test_edinet_fetch_llm_failure_returns_502(client, monkeypatch):
+    monkeypatch.setattr("app.api.main.fetch_document_pdf", lambda doc_id: b"%PDF-1.4 dummy")
+    monkeypatch.setattr("app.api.main.extract_text_from_file", lambda path: "ダミーテキスト")
+
+    def _raise(text, document_name):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("app.api.main.extract_ir_data_points", _raise)
+
+    response = client.post("/api/edinet/fetch", json={"doc_id": "S100ABCD"})
+    assert response.status_code == 502

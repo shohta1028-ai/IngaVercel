@@ -11,8 +11,10 @@ from __future__ import annotations
 import tempfile
 import time
 import uuid
+from datetime import date
 from pathlib import Path
 
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,6 +32,11 @@ from app.causal.effect_estimation import (
     estimate_causal_effect,
 )
 from app.causal.sample_data import generate_synthetic_dataset_for_dag
+from app.ingestion.edinet_client import (
+    EdinetDocumentSummary,
+    fetch_document_pdf,
+    search_documents,
+)
 from app.ingestion.file_loader import extract_text_from_file
 from app.ingestion.ir_extractor import extract_ir_data_points
 from app.ingestion.manual_loader import load_manual_data
@@ -97,6 +104,12 @@ class CausalEstimateRequest(BaseModel):
 class WhatIfRequest(BaseModel):
     source_node_id: str
     delta_percent: float
+
+
+class EdinetFetchRequest(BaseModel):
+    doc_id: str
+    filer_name: str | None = None
+    doc_description: str | None = None
 
 
 class NodeUpdateRequest(BaseModel):
@@ -261,6 +274,49 @@ async def post_ir_extract(file: UploadFile = File(...)) -> list[IRDataPoint]:
 
         try:
             return extract_ir_data_points(text, document_name=file.filename or "uploaded")
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+
+
+@app.get("/api/edinet/search", response_model=list[EdinetDocumentSummary])
+def get_edinet_search(company: str, from_date: date, to_date: date) -> list[EdinetDocumentSummary]:
+    """EDINET（金融庁）に提出された書類を企業名・証券コードで検索する
+    （ユーザー操作時のみ実行するオンデマンド検索。日付範囲は最大31日）。
+    """
+    try:
+        return search_documents(company, from_date, to_date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"EDINET APIへの接続に失敗しました: {e}") from e
+
+
+@app.post("/api/edinet/fetch", response_model=list[IRDataPoint])
+def post_edinet_fetch(body: EdinetFetchRequest) -> list[IRDataPoint]:
+    """EDINETから指定書類のPDFを取得し、既存のIR資料抽出パイプライン
+    （テキスト抽出→LLMによるKPI抽出）にそのまま流し込む。
+    """
+    try:
+        pdf_bytes = fetch_document_pdf(body.doc_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"EDINET APIへの接続に失敗しました: {e}") from e
+
+    document_name = f"EDINET: {body.filer_name or ''} {body.doc_description or body.doc_id}".strip()
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
+        tmp.write(pdf_bytes)
+        tmp.flush()
+        tmp_path = Path(tmp.name)
+
+        try:
+            text = extract_text_from_file(tmp_path)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            return extract_ir_data_points(text, document_name=document_name)
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
 
