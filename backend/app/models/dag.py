@@ -51,6 +51,16 @@ class TuningStatus(str, Enum):
     REOPENED = "reopened"
 
 
+class SourceCitation(BaseModel):
+    """ノードの数値・KPIの出典を構造化して保持する（IRデータ取込み・ユーザー
+    手動編集の両方で使う）。descriptionの自由記述と異なり、リンク表示等の
+    UI表現がしやすいようフィールドを分けている。"""
+
+    document_name: Optional[str] = None
+    url: Optional[str] = None
+    excerpt: Optional[str] = None
+
+
 class Node(BaseModel):
     id: str
     label: str
@@ -62,6 +72,7 @@ class Node(BaseModel):
     # 期間ラベル(例: "2025年3月期") -> その期の実測値。実データがある
     # ノードのみ設定する（無いノードはNoneのまま＝構造のみの推定値扱い）
     values_by_period: Optional[dict[str, float]] = None
+    source_citation: Optional[SourceCitation] = None
 
 
 class Lag(BaseModel):

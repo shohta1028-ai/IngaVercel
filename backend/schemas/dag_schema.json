@@ -56,6 +56,11 @@
     "edges": {
       "type": "array",
       "items": { "$ref": "#/$defs/edge" }
+    },
+    "available_periods": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "表示・切替可能な会計期間のラベル一覧（例: ['2023年3月期', ..., '2026年3月期']、末尾が最新期）。nodeのvalues_by_periodのキーと対応する"
     }
   },
   "$defs": {
@@ -92,6 +97,20 @@
           "type": "string",
           "enum": ["template", "ir_data", "user_added"],
           "description": "このノードがどこ由来か: 業界標準テンプレート / 企業IRデータ / ユーザー手動追加"
+        },
+        "values_by_period": {
+          "type": ["object", "null"],
+          "additionalProperties": { "type": "number" },
+          "description": "会計期間ラベル(ルートのavailable_periodsのキーと対応) -> その期の実測値。実データが確認できたノードのみ設定する"
+        },
+        "source_citation": {
+          "type": ["object", "null"],
+          "description": "このノードの数値の出典（IRデータ取込み・ユーザー手動編集で設定）",
+          "properties": {
+            "document_name": { "type": ["string", "null"] },
+            "url": { "type": ["string", "null"] },
+            "excerpt": { "type": ["string", "null"] }
+          }
         }
       }
     },

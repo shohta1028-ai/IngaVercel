@@ -43,7 +43,14 @@ from app.api.template_library import (
 from app.llm.template_generator import generate_industry_template
 from app.merge.goal import set_goal
 from app.merge.ir_merge import merge_ir_data_points
-from app.models.dag import Edge, EdgeSign, EdgeStatus, FinancialCausalDAG, NodeSource
+from app.models.dag import (
+    Edge,
+    EdgeSign,
+    EdgeStatus,
+    FinancialCausalDAG,
+    NodeSource,
+    SourceCitation,
+)
 from app.tuning.dialogue import apply_user_response, generate_next_proposal
 from app.tuning.models import TuningProposal
 
@@ -92,6 +99,13 @@ class WhatIfRequest(BaseModel):
     delta_percent: float
 
 
+class NodeUpdateRequest(BaseModel):
+    values_by_period: dict[str, float] | None = None
+    unit: str | None = None
+    description: str | None = None
+    source_citation: SourceCitation | None = None
+
+
 @app.get("/api/dag", response_model=FinancialCausalDAG)
 def get_dag() -> FinancialCausalDAG:
     return load_dag()
@@ -126,6 +140,29 @@ def post_edge(body: EdgeCreateRequest) -> FinancialCausalDAG:
         rationale="ユーザーがドラッグ操作で紐付け（影響の方向は要確認）",
     )
     updated = dag.model_copy(update={"edges": [*dag.edges, new_edge]})
+    save_dag(updated)
+    return updated
+
+
+@app.patch("/api/dag/nodes/{node_id}", response_model=FinancialCausalDAG)
+def patch_node(node_id: str, body: NodeUpdateRequest) -> FinancialCausalDAG:
+    """ユーザーがノードの実績値・単位・説明・出典をマニュアルで編集する。
+
+    送られたフィールドのみを更新する（未送信のフィールドは既存値を維持）。
+    """
+    dag = load_dag()
+    if node_id not in {n.id for n in dag.nodes}:
+        raise HTTPException(status_code=400, detail="存在しないノードIDです")
+
+    # model_dump()だとネストしたSourceCitationがdictに変換されてしまい、
+    # model_copyでそのままNode.source_citationへ生dictが入ってしまう
+    # (Pydanticインスタンスとして検証されない)ため、set済みフィールドの
+    # 値をモデルインスタンスのまま取り出す
+    updates = {field: getattr(body, field) for field in body.model_fields_set}
+    nodes = [
+        n.model_copy(update=updates) if n.id == node_id else n for n in dag.nodes
+    ]
+    updated = dag.model_copy(update={"nodes": nodes})
     save_dag(updated)
     return updated
 

@@ -1,4 +1,4 @@
-import type { FinancialCausalDAG, NodeSource } from "../types/dag";
+import type { DagNode, FinancialCausalDAG, NodeSource } from "../types/dag";
 import type { TuningProposal } from "./tuningTypes";
 import type { IRDataPoint } from "./irTypes";
 import type { CausalEffectResult, WhatIfProjection } from "./causalTypes";
@@ -45,6 +45,16 @@ export function updateGoal(goal: string): Promise<FinancialCausalDAG> {
   return request<FinancialCausalDAG>("/api/dag/goal", {
     method: "PATCH",
     body: JSON.stringify({ goal }),
+  });
+}
+
+export function updateNode(
+  nodeId: string,
+  patch: Partial<Pick<DagNode, "values_by_period" | "unit" | "description" | "source_citation">>
+): Promise<FinancialCausalDAG> {
+  return request<FinancialCausalDAG>(`/api/dag/nodes/${encodeURIComponent(nodeId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
   });
 }
 

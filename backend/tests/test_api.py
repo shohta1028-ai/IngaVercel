@@ -69,6 +69,44 @@ def test_reset_restores_seed(client):
     assert response.json()["goal"] == "ロボット部門の増収を起点とした収益性改善"
 
 
+def test_patch_node_updates_values_by_period_and_persists(client):
+    response = client.patch(
+        "/api/dag/nodes/revenue",
+        json={"values_by_period": {"2026年3月期": 900000.0}},
+    )
+    assert response.status_code == 200
+    revenue = next(n for n in response.json()["nodes"] if n["id"] == "revenue")
+    assert revenue["values_by_period"] == {"2026年3月期": 900000.0}
+    # 送っていないunit等は維持される
+    assert revenue["unit"] == "百万円"
+
+    again = client.get("/api/dag")
+    revenue_again = next(n for n in again.json()["nodes"] if n["id"] == "revenue")
+    assert revenue_again["values_by_period"] == {"2026年3月期": 900000.0}
+
+
+def test_patch_node_updates_source_citation(client):
+    response = client.patch(
+        "/api/dag/nodes/revenue",
+        json={"source_citation": {"document_name": "手動修正", "url": "https://example.com/ir"}},
+    )
+    assert response.status_code == 200
+    revenue = next(n for n in response.json()["nodes"] if n["id"] == "revenue")
+    assert revenue["source_citation"] == {
+        "document_name": "手動修正",
+        "url": "https://example.com/ir",
+        "excerpt": None,
+    }
+
+
+def test_patch_node_with_unknown_node_returns_400(client):
+    response = client.patch(
+        "/api/dag/nodes/nonexistent",
+        json={"unit": "円"},
+    )
+    assert response.status_code == 400
+
+
 def test_generate_template_replaces_current_dag(client, monkeypatch):
     fake_dag = FinancialCausalDAG(
         id="dag_fake",

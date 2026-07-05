@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.ingestion.models import IRDataPoint, IRDataPointKind
-from app.models.dag import FinancialCausalDAG, Node, NodeCategory, NodeSource
+from app.models.dag import FinancialCausalDAG, Node, NodeCategory, NodeSource, SourceCitation
 
 
 def _normalize_label(label: str) -> str:
@@ -64,8 +64,10 @@ def merge_ir_data_points(
             label=dp.label,
             category=_category_for(dp.kind),
             unit=dp.unit,
-            description=f"出典: {dp.source.document_name}",
             source=source,
+            source_citation=SourceCitation(
+                document_name=dp.source.document_name, excerpt=dp.source.excerpt
+            ),
         )
         nodes.append(new_node)
 
