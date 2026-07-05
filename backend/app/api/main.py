@@ -11,8 +11,10 @@ from __future__ import annotations
 import tempfile
 import time
 import uuid
+from datetime import date
 from pathlib import Path
 
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,6 +32,11 @@ from app.causal.effect_estimation import (
     estimate_causal_effect,
 )
 from app.causal.sample_data import generate_synthetic_dataset_for_dag
+from app.ingestion.edinet_client import (
+    EdinetDocumentSummary,
+    fetch_document_pdf,
+    search_documents,
+)
 from app.ingestion.file_loader import extract_text_from_file
 from app.ingestion.ir_extractor import extract_ir_data_points
 from app.ingestion.manual_loader import load_manual_data
@@ -43,7 +50,14 @@ from app.api.template_library import (
 from app.llm.template_generator import generate_industry_template
 from app.merge.goal import set_goal
 from app.merge.ir_merge import merge_ir_data_points
-from app.models.dag import Edge, EdgeSign, EdgeStatus, FinancialCausalDAG, NodeSource
+from app.models.dag import (
+    Edge,
+    EdgeSign,
+    EdgeStatus,
+    FinancialCausalDAG,
+    NodeSource,
+    SourceCitation,
+)
 from app.tuning.dialogue import apply_user_response, generate_next_proposal
 from app.tuning.models import TuningProposal
 
@@ -92,6 +106,19 @@ class WhatIfRequest(BaseModel):
     delta_percent: float
 
 
+class EdinetFetchRequest(BaseModel):
+    doc_id: str
+    filer_name: str | None = None
+    doc_description: str | None = None
+
+
+class NodeUpdateRequest(BaseModel):
+    values_by_period: dict[str, float] | None = None
+    unit: str | None = None
+    description: str | None = None
+    source_citation: SourceCitation | None = None
+
+
 @app.get("/api/dag", response_model=FinancialCausalDAG)
 def get_dag() -> FinancialCausalDAG:
     return load_dag()
@@ -126,6 +153,29 @@ def post_edge(body: EdgeCreateRequest) -> FinancialCausalDAG:
         rationale="ユーザーがドラッグ操作で紐付け（影響の方向は要確認）",
     )
     updated = dag.model_copy(update={"edges": [*dag.edges, new_edge]})
+    save_dag(updated)
+    return updated
+
+
+@app.patch("/api/dag/nodes/{node_id}", response_model=FinancialCausalDAG)
+def patch_node(node_id: str, body: NodeUpdateRequest) -> FinancialCausalDAG:
+    """ユーザーがノードの実績値・単位・説明・出典をマニュアルで編集する。
+
+    送られたフィールドのみを更新する（未送信のフィールドは既存値を維持）。
+    """
+    dag = load_dag()
+    if node_id not in {n.id for n in dag.nodes}:
+        raise HTTPException(status_code=400, detail="存在しないノードIDです")
+
+    # model_dump()だとネストしたSourceCitationがdictに変換されてしまい、
+    # model_copyでそのままNode.source_citationへ生dictが入ってしまう
+    # (Pydanticインスタンスとして検証されない)ため、set済みフィールドの
+    # 値をモデルインスタンスのまま取り出す
+    updates = {field: getattr(body, field) for field in body.model_fields_set}
+    nodes = [
+        n.model_copy(update=updates) if n.id == node_id else n for n in dag.nodes
+    ]
+    updated = dag.model_copy(update={"nodes": nodes})
     save_dag(updated)
     return updated
 
@@ -224,6 +274,49 @@ async def post_ir_extract(file: UploadFile = File(...)) -> list[IRDataPoint]:
 
         try:
             return extract_ir_data_points(text, document_name=file.filename or "uploaded")
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
+
+
+@app.get("/api/edinet/search", response_model=list[EdinetDocumentSummary])
+def get_edinet_search(company: str, from_date: date, to_date: date) -> list[EdinetDocumentSummary]:
+    """EDINET（金融庁）に提出された書類を企業名・証券コードで検索する
+    （ユーザー操作時のみ実行するオンデマンド検索。日付範囲は最大31日）。
+    """
+    try:
+        return search_documents(company, from_date, to_date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"EDINET APIへの接続に失敗しました: {e}") from e
+
+
+@app.post("/api/edinet/fetch", response_model=list[IRDataPoint])
+def post_edinet_fetch(body: EdinetFetchRequest) -> list[IRDataPoint]:
+    """EDINETから指定書類のPDFを取得し、既存のIR資料抽出パイプライン
+    （テキスト抽出→LLMによるKPI抽出）にそのまま流し込む。
+    """
+    try:
+        pdf_bytes = fetch_document_pdf(body.doc_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"EDINET APIへの接続に失敗しました: {e}") from e
+
+    document_name = f"EDINET: {body.filer_name or ''} {body.doc_description or body.doc_id}".strip()
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
+        tmp.write(pdf_bytes)
+        tmp.flush()
+        tmp_path = Path(tmp.name)
+
+        try:
+            text = extract_text_from_file(tmp_path)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        try:
+            return extract_ir_data_points(text, document_name=document_name)
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"LLM呼び出しに失敗しました: {e}") from e
 

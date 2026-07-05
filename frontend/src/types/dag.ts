@@ -19,6 +19,12 @@ export type EdgeStatus =
 
 export type LagUnit = "day" | "week" | "month" | "quarter" | "year";
 
+export interface SourceCitation {
+  document_name?: string | null;
+  url?: string | null;
+  excerpt?: string | null;
+}
+
 export interface DagNode {
   id: string;
   label: string;
@@ -28,6 +34,7 @@ export interface DagNode {
   description?: string | null;
   source: NodeSource;
   values_by_period?: Record<string, number> | null;
+  source_citation?: SourceCitation | null;
 }
 
 export interface DagLag {

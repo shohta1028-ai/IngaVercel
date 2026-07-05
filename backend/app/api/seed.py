@@ -22,6 +22,7 @@ from app.models.dag import (
     Node,
     NodeCategory,
     NodeSource,
+    SourceCitation,
 )
 
 AVAILABLE_PERIODS = ["2023年3月期", "2024年3月期", "2025年3月期", "2026年3月期"]
@@ -44,6 +45,10 @@ OPERATING_INCOME_BY_PERIOD = {
 
 _ILLUSTRATIVE_NOTE = "イラストレーション目的の推定値（同社の実際の開示数値ではありません）"
 
+_TANSHIN_CITATION = SourceCitation(
+    document_name="ファナック株式会社 決算短信（2025年4月23日・2026年4月24日公表分）"
+)
+
 
 def build_seed_dag() -> FinancialCausalDAG:
     nodes = [
@@ -56,6 +61,7 @@ def build_seed_dag() -> FinancialCausalDAG:
             source=NodeSource.IR_DATA,
             description="ファナック決算短信の実績値（複数ソースで確認済み）。",
             values_by_period=REVENUE_BY_PERIOD,
+            source_citation=_TANSHIN_CITATION,
         ),
         Node(
             id="cogs",
@@ -84,6 +90,7 @@ def build_seed_dag() -> FinancialCausalDAG:
             source=NodeSource.IR_DATA,
             description="ファナック決算短信の実績値（複数ソースで確認済み）。",
             values_by_period=OPERATING_INCOME_BY_PERIOD,
+            source_citation=_TANSHIN_CITATION,
         ),
         Node(
             id="inventory",

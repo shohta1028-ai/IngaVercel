@@ -9,8 +9,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import type { FinancialCausalDAG } from "../../types/dag";
-import { createEdge, fetchEdgeEffects, updateGoal } from "../../api/client";
+import type { DagNode, FinancialCausalDAG } from "../../types/dag";
+import { createEdge, fetchEdgeEffects, updateGoal, updateNode } from "../../api/client";
 import { layoutDagNodes, unconnectedNodeIds } from "../../lib/layout";
 import type { Mode } from "../../lib/mode";
 import { DagNodeCard, type DagFlowNodeData } from "./DagNodeCard";
@@ -18,6 +18,7 @@ import { SectionLabelNode } from "./SectionLabelNode";
 import { AnimatedDashedEdge, type DagFlowEdgeData } from "./AnimatedDashedEdge";
 import { Legend } from "./Legend";
 import { DetailPanel } from "./DetailPanel";
+import { RightPanel, type RightPanelTab } from "./RightPanel";
 import { TopStrip } from "./TopStrip";
 import { ChatTuning } from "../ChatTuning/ChatTuning";
 import { TemplateLibraryPanel } from "../TemplateLibrary/TemplateLibraryPanel";
@@ -35,6 +36,7 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
   const [dag, setDag] = useState(initialDag);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("detail");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isTemplatePanelOpen, setIsTemplatePanelOpen] = useState(false);
   const [isIrPanelOpen, setIsIrPanelOpen] = useState(false);
@@ -134,6 +136,14 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
       .catch((e) => console.error("エッジの追加に失敗しました", e));
   }
 
+  async function handleUpdateNode(
+    nodeId: string,
+    patch: Partial<Pick<DagNode, "values_by_period" | "unit" | "description" | "source_citation">>
+  ) {
+    const updated = await updateNode(nodeId, patch);
+    setDag(updated);
+  }
+
   function handleGoalChange(goal: string) {
     setDag((prev) => ({ ...prev, goal })); // 入力中の見た目を即時反映
     updateGoal(goal).catch((e) => console.error("ゴールの更新に失敗しました", e));
@@ -148,6 +158,12 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
   function handleRequestUploadFromLibrary() {
     setIsTemplatePanelOpen(false);
     setIsIrPanelOpen(true);
+  }
+
+  function handleIrDataMerged(newDag: FinancialCausalDAG) {
+    setDag(newDag);
+    setIsIrPanelOpen(false);
+    setIsChatOpen(true); // 未接続ノードの接続をAIにアシストしてもらう
   }
 
   async function handleToggleMode() {
@@ -205,10 +221,12 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
                 if (node.type !== "dagNode") return;
                 setSelectedNodeId(node.id);
                 setSelectedEdgeId(null);
+                setRightPanelTab("detail");
               }}
               onEdgeClick={(_, edge) => {
                 setSelectedEdgeId(edge.id);
                 setSelectedNodeId(null);
+                setRightPanelTab("detail");
               }}
               onPaneClick={() => {
                 setSelectedNodeId(null);
@@ -222,27 +240,27 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
               <Controls />
             </ReactFlow>
           </div>
-          <div
-            style={{
-              width: 280,
-              flexShrink: 0,
-              display: "flex",
-              flexDirection: "column",
-              borderLeft: "1px solid var(--border-hairline)",
-              background: "var(--surface-1)",
-            }}
-          >
-            <DetailPanel
-              node={selectedNode}
-              edge={selectedEdge}
-              nodeById={nodeById}
-              onClose={() => {
-                setSelectedNodeId(null);
-                setSelectedEdgeId(null);
-              }}
-            />
-            <ReasoningLog />
-          </div>
+          <RightPanel
+            activeTab={rightPanelTab}
+            onTabChange={setRightPanelTab}
+            mode={mode}
+            detail={
+              <DetailPanel
+                node={selectedNode}
+                edge={selectedEdge}
+                nodeById={nodeById}
+                edges={dag.edges}
+                edgeEffects={edgeEffects}
+                availablePeriods={dag.available_periods ?? []}
+                onClose={() => {
+                  setSelectedNodeId(null);
+                  setSelectedEdgeId(null);
+                }}
+                onUpdateNode={handleUpdateNode}
+              />
+            }
+            log={<ReasoningLog />}
+          />
         </div>
         {isChatOpen && (
           <ChatTuning dag={dag} setDag={setDag} onClose={() => setIsChatOpen(false)} />
@@ -256,7 +274,7 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
         />
       )}
       {isIrPanelOpen && (
-        <IrDataPanel onMerged={setDag} onClose={() => setIsIrPanelOpen(false)} />
+        <IrDataPanel onMerged={handleIrDataMerged} onClose={() => setIsIrPanelOpen(false)} />
       )}
       {isEffectPanelOpen && (
         <EffectEstimationPanel dag={dag} onClose={() => setIsEffectPanelOpen(false)} />

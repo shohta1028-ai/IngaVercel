@@ -1,8 +1,9 @@
-import type { FinancialCausalDAG, NodeSource } from "../types/dag";
+import type { DagNode, FinancialCausalDAG, NodeSource } from "../types/dag";
 import type { TuningProposal } from "./tuningTypes";
 import type { IRDataPoint } from "./irTypes";
 import type { CausalEffectResult, WhatIfProjection } from "./causalTypes";
 import type { TemplateLibraryEntry, TemplateLibraryListItem } from "./templateLibraryTypes";
+import type { EdinetDocumentSummary } from "./edinetTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -48,6 +49,16 @@ export function updateGoal(goal: string): Promise<FinancialCausalDAG> {
   });
 }
 
+export function updateNode(
+  nodeId: string,
+  patch: Partial<Pick<DagNode, "values_by_period" | "unit" | "description" | "source_citation">>
+): Promise<FinancialCausalDAG> {
+  return request<FinancialCausalDAG>(`/api/dag/nodes/${encodeURIComponent(nodeId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
 export function createEdge(sourceNodeId: string, targetNodeId: string): Promise<FinancialCausalDAG> {
   return request<FinancialCausalDAG>("/api/dag/edges", {
     method: "POST",
@@ -80,6 +91,26 @@ export function extractIrData(file: File): Promise<IRDataPoint[]> {
   const formData = new FormData();
   formData.append("file", file);
   return requestForm<IRDataPoint[]>("/api/ir/extract", formData);
+}
+
+export function searchEdinetDocuments(
+  company: string,
+  fromDate: string,
+  toDate: string
+): Promise<EdinetDocumentSummary[]> {
+  const params = new URLSearchParams({ company, from_date: fromDate, to_date: toDate });
+  return request<EdinetDocumentSummary[]>(`/api/edinet/search?${params.toString()}`);
+}
+
+export function fetchEdinetDocument(
+  docId: string,
+  filerName?: string,
+  docDescription?: string
+): Promise<IRDataPoint[]> {
+  return request<IRDataPoint[]>("/api/edinet/fetch", {
+    method: "POST",
+    body: JSON.stringify({ doc_id: docId, filer_name: filerName, doc_description: docDescription }),
+  });
 }
 
 export function mergeIrData(
