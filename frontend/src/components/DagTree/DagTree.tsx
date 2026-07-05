@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Background,
   Controls,
@@ -43,9 +43,17 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
   const [mode, setMode] = useState<Mode>("discovery");
   const [edgeEffects, setEdgeEffects] = useState<Record<string, number>>({});
   const [whatIfResults, setWhatIfResults] = useState<Record<string, number>>({});
+  const [selectedPeriod, setSelectedPeriod] = useState<string | undefined>(
+    initialDag.available_periods?.[initialDag.available_periods.length - 1]
+  );
   const { pushLogEntry } = useReasoningLog();
 
   const isTuningLocked = dag.tuning_state?.status === "locked";
+
+  // テンプレート適用等でDAGそのものが差し替わったら、新しいDAGの最新期に追従する
+  useEffect(() => {
+    setSelectedPeriod(dag.available_periods?.[dag.available_periods.length - 1]);
+  }, [dag.id]);
 
   const nodeById = useMemo(
     () => Object.fromEntries(dag.nodes.map((n) => [n.id, n])),
@@ -71,6 +79,7 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
         dagNode: n,
         isCandidate: candidateIds.has(n.id),
         whatIfDelta: mode === "inference" ? whatIfResults[n.id] : undefined,
+        periodValue: selectedPeriod ? n.values_by_period?.[selectedPeriod] : undefined,
       },
     }));
 
@@ -86,7 +95,7 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
       selectable: false,
     };
     return [...dagFlowNodes, labelNode];
-  }, [dag.nodes, positions, candidateIds, mode, whatIfResults]);
+  }, [dag.nodes, positions, candidateIds, mode, whatIfResults, selectedPeriod]);
 
   const flowEdges: FlowEdge[] = useMemo(
     () =>
@@ -174,7 +183,15 @@ function DagTreeInner({ dag: initialDag }: { dag: FinancialCausalDAG }) {
         onToggleMode={handleToggleMode}
       />
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <TopStrip goal={dag.goal ?? ""} onGoalChange={handleGoalChange} mode={mode} />
+        <TopStrip
+          goal={dag.goal ?? ""}
+          onGoalChange={handleGoalChange}
+          mode={mode}
+          company={dag.company}
+          availablePeriods={dag.available_periods}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
         <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
           <Legend />
           <div style={{ flex: 1, minWidth: 0, position: "relative" }}>

@@ -4,7 +4,11 @@ from app.causal.effect_estimation import (
     estimate_causal_effect,
 )
 from app.causal.graph_builder import build_confirmed_graph
-from app.causal.sample_data import build_sample_manufacturing_dag, generate_synthetic_dataset
+from app.causal.sample_data import (
+    build_sample_manufacturing_dag,
+    generate_synthetic_dataset,
+    generate_synthetic_dataset_for_dag,
+)
 from app.models.dag import EdgeStatus
 
 
@@ -57,6 +61,33 @@ def test_estimate_causal_effect_raises_for_unknown_node():
         estimate_causal_effect(dag, data, treatment_node_id="nonexistent", outcome_node_id="operating_income")
 
 
+def test_estimate_causal_effect_raises_clear_error_for_disconnected_nodes():
+    """テンプレート適用直後などエッジが全てai_proposedで確定エッジが無い場合、
+    DoWhy内部の例外ではなく分かりやすいValueErrorになることを確認する。"""
+    from app.models.dag import Edge, EdgeSign, EdgeStatus, FinancialCausalDAG, Node, NodeCategory, NodeSource
+
+    dag = FinancialCausalDAG(
+        id="dag_disconnected",
+        name="disconnected",
+        nodes=[
+            Node(id="a", label="A", category=NodeCategory.KPI_FINANCIAL, source=NodeSource.TEMPLATE),
+            Node(id="b", label="B", category=NodeCategory.KPI_FINANCIAL, source=NodeSource.TEMPLATE),
+        ],
+        edges=[
+            Edge(
+                id="e1", source_node_id="a", target_node_id="b",
+                sign=EdgeSign.POSITIVE, status=EdgeStatus.AI_PROPOSED,
+            )
+        ],
+    )
+    data = generate_synthetic_dataset_for_dag(dag, n=50, seed=0)
+
+    import pytest
+
+    with pytest.raises(ValueError, match="つながっていません"):
+        estimate_causal_effect(dag, data, treatment_node_id="a", outcome_node_id="b")
+
+
 def test_compute_edge_effects_covers_every_confirmed_edge():
     dag = build_sample_manufacturing_dag()
     data = generate_synthetic_dataset(n=500, seed=0)
@@ -97,3 +128,51 @@ def test_compute_whatif_raises_for_unknown_node():
 
     with pytest.raises(ValueError):
         compute_whatif(dag, data, source_node_id="nonexistent", delta_percent=10)
+
+
+def test_generate_synthetic_dataset_for_dag_covers_every_node():
+    dag = build_sample_manufacturing_dag()
+
+    data = generate_synthetic_dataset_for_dag(dag, n=200, seed=0)
+
+    assert set(data.columns) == {n.id for n in dag.nodes}
+    assert len(data) == 200
+
+
+def test_generate_synthetic_dataset_for_dag_recovers_edge_sign():
+    dag = build_sample_manufacturing_dag()
+    data = generate_synthetic_dataset_for_dag(dag, n=800, seed=0)
+
+    # plant_utilization_rate -> cogs は負の符号
+    result = estimate_causal_effect(
+        dag, data, treatment_node_id="plant_utilization_rate", outcome_node_id="cogs"
+    )
+    assert result.estimated_effect < 0
+
+
+def test_generate_synthetic_dataset_for_dag_works_with_arbitrary_dag():
+    """製造業サンプル以外の(9ノードに決め打ちでない)DAGでも動くことを確認する。"""
+    from app.models.dag import Edge, EdgeSign, FinancialCausalDAG, Node, NodeCategory, NodeSource
+
+    dag = FinancialCausalDAG(
+        id="dag_other",
+        name="other",
+        nodes=[
+            Node(id="mrr", label="MRR", category=NodeCategory.KPI_FINANCIAL, source=NodeSource.TEMPLATE),
+            Node(id="churn", label="解約率", category=NodeCategory.KPI_NONFINANCIAL, source=NodeSource.TEMPLATE),
+            Node(id="isolated", label="孤立ノード", category=NodeCategory.KPI_FINANCIAL, source=NodeSource.TEMPLATE),
+        ],
+        edges=[
+            Edge(
+                id="e1",
+                source_node_id="churn",
+                target_node_id="mrr",
+                sign=EdgeSign.NEGATIVE,
+                status=EdgeStatus.USER_CONFIRMED,
+            )
+        ],
+    )
+
+    data = generate_synthetic_dataset_for_dag(dag, n=100, seed=0)
+
+    assert set(data.columns) == {"mrr", "churn", "isolated"}

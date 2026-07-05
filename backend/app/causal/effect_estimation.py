@@ -51,6 +51,11 @@ def estimate_causal_effect(
         raise ValueError(f"データに数値列がないノードです: {treatment_node_id}")
     if outcome_node_id not in data.columns:
         raise ValueError(f"データに数値列がないノードです: {outcome_node_id}")
+    if not nx.has_path(graph.to_undirected(), treatment_node_id, outcome_node_id):
+        raise ValueError(
+            "確定済みのエッジでこの2つのノードがつながっていません。"
+            "対話チューニングで因果構造を確定してから推論してください。"
+        )
 
     model = CausalModel(
         data=data,

@@ -2,6 +2,7 @@ anthropic>=0.40.0
 pydantic>=2.7.0
 pytest>=8.0.0
 pypdf>=4.3.0
+cryptography>=43.0.0  # pypdfがAES暗号化された(オーナーパスワード付き)PDFを復号するために必要
 openpyxl>=3.1.0
 dowhy==0.8
 # dowhy==0.8はnetworkxのd_separated APIに依存するため3.3以降(is_d_separatorに改名)ではなく3.2.1に固定

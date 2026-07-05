@@ -6,6 +6,7 @@ export type DagFlowNodeData = {
   dagNode: DagNode;
   isCandidate?: boolean;
   whatIfDelta?: number;
+  periodValue?: number;
 };
 
 const handleStyle = {
@@ -16,7 +17,7 @@ const handleStyle = {
 };
 
 export function DagNodeCard({ data }: NodeProps) {
-  const { dagNode, isCandidate, whatIfDelta } = data as unknown as DagFlowNodeData;
+  const { dagNode, isCandidate, whatIfDelta, periodValue } = data as unknown as DagFlowNodeData;
 
   return (
     <div
@@ -38,9 +39,18 @@ export function DagNodeCard({ data }: NodeProps) {
     >
       <Handle type="target" position={Position.Left} style={handleStyle} />
       <div style={{ fontWeight: 600 }}>{dagNode.label}</div>
-      <div style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>
-        {dagNode.unit ?? " "}
-      </div>
+      {periodValue !== undefined ? (
+        <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+          {periodValue.toLocaleString("ja-JP")}
+          <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 400, marginLeft: 3 }}>
+            {dagNode.unit ?? ""}
+          </span>
+        </div>
+      ) : (
+        <div style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>
+          {dagNode.unit ?? " "}
+        </div>
+      )}
       {whatIfDelta !== undefined && (
         <div
           style={{

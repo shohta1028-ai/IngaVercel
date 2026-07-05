@@ -29,7 +29,7 @@ from app.causal.effect_estimation import (
     compute_whatif,
     estimate_causal_effect,
 )
-from app.causal.sample_data import generate_synthetic_dataset
+from app.causal.sample_data import generate_synthetic_dataset_for_dag
 from app.ingestion.file_loader import extract_text_from_file
 from app.ingestion.ir_extractor import extract_ir_data_points
 from app.ingestion.manual_loader import load_manual_data
@@ -244,10 +244,11 @@ def get_causal_available_nodes() -> list[str]:
     """因果効果推定のデモ用合成データが値を持つノードidの一覧。
 
     このプロトタイプでは実測の時系列データを収集していないため、
-    サンプルDAG向けに用意した合成データの列に含まれるノードのみ
+    現在のDAG構造から生成した合成データの列（＝現在のDAGの全ノード）を
     処置・結果として選択可能にする。
     """
-    return list(generate_synthetic_dataset().columns)
+    dag = load_dag()
+    return list(generate_synthetic_dataset_for_dag(dag).columns)
 
 
 @app.post("/api/causal/estimate", response_model=CausalEffectResult)
@@ -256,10 +257,11 @@ def post_causal_estimate(body: CausalEstimateRequest) -> CausalEffectResult:
     用いてDoWhyで因果効果を推定する。
 
     注: このプロトタイプでは実測の時系列データをまだ収集していないため、
-    符号が既知の合成データ(app.causal.sample_data)を用いたデモ推定となる。
+    現在のDAG構造から生成した合成データ(app.causal.sample_data)を用いた
+    デモ推定となる。
     """
     dag = load_dag()
-    data = generate_synthetic_dataset()
+    data = generate_synthetic_dataset_for_dag(dag)
     try:
         return estimate_causal_effect(
             dag, data, treatment_node_id=body.treatment_node_id, outcome_node_id=body.outcome_node_id
@@ -275,7 +277,7 @@ def post_causal_edge_effects() -> dict[str, float]:
     刻印するために使う（デモ用合成データによる推定）。
     """
     dag = load_dag()
-    data = generate_synthetic_dataset()
+    data = generate_synthetic_dataset_for_dag(dag)
     return compute_edge_effects(dag, data)
 
 
@@ -285,7 +287,7 @@ def post_causal_whatif(body: WhatIfRequest) -> list[WhatIfProjection]:
     予測値をWhat-ifシミュレーターのスライダー操作から呼び出す。
     """
     dag = load_dag()
-    data = generate_synthetic_dataset()
+    data = generate_synthetic_dataset_for_dag(dag)
     try:
         return compute_whatif(dag, data, body.source_node_id, body.delta_percent)
     except Exception as e:

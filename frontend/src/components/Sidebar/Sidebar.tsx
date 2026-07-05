@@ -105,26 +105,19 @@ export function Sidebar({
           marginBottom: 2,
         }}
       >
-        探索
+        セットアップ
       </div>
       <SidebarButton
-        label="業界テンプレートライブラリ"
+        label="業界テンプレートライブラリ（DAGを置き換える）"
         icon={<TemplateIcon />}
         accent={discoveryAccent}
         onClick={onOpenTemplateLibrary}
       />
       <SidebarButton
-        label="データから因果関係を探索する（IRデータ取込み）"
+        label="IRデータ取込み（データを追加・拡充する）"
         icon={<IrDataIcon />}
         accent={discoveryAccent}
         onClick={onOpenIrData}
-      />
-      <SidebarButton
-        label="対話チューニング"
-        icon={<ChatIcon />}
-        active={isChatOpen}
-        accent={discoveryAccent}
-        onClick={onToggleChat}
       />
 
       <SidebarDivider />
@@ -138,8 +131,15 @@ export function Sidebar({
           marginBottom: 2,
         }}
       >
-        推論
+        分析ツール
       </div>
+      <SidebarButton
+        label="対話チューニング"
+        icon={<ChatIcon />}
+        active={isChatOpen}
+        accent={discoveryAccent}
+        onClick={onToggleChat}
+      />
       <SidebarButton
         label="因果効果を推論する"
         icon={<EffectIcon />}

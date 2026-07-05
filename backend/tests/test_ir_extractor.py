@@ -1,7 +1,9 @@
 import json
 from dataclasses import dataclass
 
-from app.ingestion.ir_extractor import extract_ir_data_points
+import pytest
+
+from app.ingestion.ir_extractor import MAX_DOCUMENT_TEXT_CHARS, extract_ir_data_points
 from app.ingestion.models import IRDataPointKind
 
 FAKE_LLM_JSON = {
@@ -62,3 +64,59 @@ def test_extract_ir_data_points_parses_llm_output():
     assert revenue.value == 125000
     assert revenue.source.document_name == "sample_manufacturing_ir.pdf"
     assert revenue.source.excerpt is not None
+
+
+class _EmptyResponseMessages:
+    def create(self, **kwargs):
+        @dataclass
+        class _FakeResponse:
+            content: list
+
+        return _FakeResponse(content=[_FakeTextBlock(text="")])
+
+
+class _EmptyResponseClient:
+    def __init__(self):
+        self.messages = _EmptyResponseMessages()
+
+
+def test_extract_ir_data_points_raises_clear_error_on_empty_llm_response():
+    with pytest.raises(ValueError, match="空の応答"):
+        extract_ir_data_points(
+            document_text="(サンプルIRテキスト)",
+            document_name="sample.pdf",
+            client=_EmptyResponseClient(),
+        )
+
+
+class _CapturingMessages:
+    def __init__(self):
+        self.received_prompt: str | None = None
+
+    def create(self, **kwargs):
+        @dataclass
+        class _FakeResponse:
+            content: list
+
+        self.received_prompt = kwargs["messages"][0]["content"]
+        return _FakeResponse(
+            content=[_FakeTextBlock(text=json.dumps(FAKE_LLM_JSON, ensure_ascii=False))]
+        )
+
+
+class _CapturingClient:
+    def __init__(self):
+        self.messages = _CapturingMessages()
+
+
+def test_extract_ir_data_points_truncates_oversized_document_text():
+    client = _CapturingClient()
+
+    extract_ir_data_points(
+        document_text="あ" * (MAX_DOCUMENT_TEXT_CHARS * 2),
+        document_name="huge.pdf",
+        client=client,
+    )
+
+    assert client.messages.received_prompt is not None
+    assert len(client.messages.received_prompt) < MAX_DOCUMENT_TEXT_CHARS + 100

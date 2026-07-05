@@ -28,7 +28,7 @@ def test_get_dag_returns_seed_on_first_call(client):
     body = response.json()
     assert body["id"] == "dag_sample_001"
     assert len(body["nodes"]) == 10
-    assert body["goal"] == "物流効率化による営業利益改善"
+    assert body["goal"] == "ロボット部門の増収を起点とした収益性改善"
 
 
 def test_patch_goal_updates_and_persists(client):
@@ -66,7 +66,7 @@ def test_reset_restores_seed(client):
     client.patch("/api/dag/goal", json={"goal": "変更後"})
     response = client.post("/api/dag/reset")
     assert response.status_code == 200
-    assert response.json()["goal"] == "物流効率化による営業利益改善"
+    assert response.json()["goal"] == "ロボット部門の増収を起点とした収益性改善"
 
 
 def test_generate_template_replaces_current_dag(client, monkeypatch):
